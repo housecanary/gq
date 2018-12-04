@@ -88,10 +88,26 @@ func (d *DirectiveArgument) writeSchemaDefinition(w *schemaWriter) {
 	w.write(d.value.Representation())
 }
 
+// Value returns the value of the directive argument
+func (d *DirectiveArgument) Value() LiteralValue {
+	return literalValueFromAstValue(d.value)
+}
+
 // Directive represents a directive applied to a schema element
 type Directive struct {
 	named
 	arguments []*DirectiveArgument
+}
+
+// Argument returns the argument with the specified name or nil
+func (d *Directive) Argument(name string) *DirectiveArgument {
+	for _, arg := range d.arguments {
+		if arg.name == name {
+			return arg
+		}
+	}
+
+	return nil
 }
 
 func (d *Directive) writeSchemaDefinition(w *schemaWriter) {
