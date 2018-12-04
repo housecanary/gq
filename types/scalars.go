@@ -95,6 +95,29 @@ func (v ID) CollectInto(col schema.ScalarCollector) {
 	}
 }
 
+// Scan implements sql.Scanner
+func (v *ID) Scan(src interface{}) error {
+	if src == nil {
+		*v = ID{present: false}
+		return nil
+	}
+	switch t := src.(type) {
+	case []byte:
+		*v = ID{present: true, v: string(t)}
+		return nil
+	case string:
+		*v = ID{present: true, v: t}
+		return nil
+	case int64:
+		*v = ID{present: true, v: strconv.FormatInt(t, 64)}
+		return nil
+	case float64:
+		*v = ID{present: true, v: strconv.FormatInt(int64(t), 64)}
+		return nil
+	}
+	return fmt.Errorf("Cannot scan value %v to a string", src)
+}
+
 // String represents the GraphQL built in String type
 type String struct {
 	v       string
