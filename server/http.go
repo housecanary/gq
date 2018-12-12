@@ -43,14 +43,26 @@ var DefaultQueryBuilder QueryBuilder = func(schema *schema.Schema, text string, 
 // set up callbacks, and set up tracing.
 type QueryExecutor func(q *query.PreparedQuery, req *http.Request, vars query.Variables, responseHeaders http.Header) []byte
 
+// A BatchQueryExecutor runs a batch of prepared queries.  Implementations of this may add variables to the context,
+// set up callbacks, and set up tracing.
+type BatchQueryExecutor func(q []BatchQueryItem, req *http.Request, responseHeaders http.Header) [][]byte
+
+// A BatchQueryItem is a single item in a batch of queries
+type BatchQueryItem struct {
+	Query       *query.PreparedQuery
+	Vars        query.Variables
+	resultIndex int
+}
+
 var _ http.Handler = &GraphQLHandler{}
 
 // A GraphQLHandler is a http.Handler that fulfills GraphQL requests
 type GraphQLHandler struct {
-	schema          *schema.Schema
-	queryBuilder    QueryBuilder
-	queryExecutor   QueryExecutor
-	disableGraphiQL bool
+	schema             *schema.Schema
+	queryBuilder       QueryBuilder
+	queryExecutor      QueryExecutor
+	batchQueryExecutor BatchQueryExecutor
+	disableGraphiQL    bool
 }
 
 // A GraphQLHandlerConfig supplies configuration parameters to NewGraphQLHandler
@@ -61,6 +73,10 @@ type GraphQLHandlerConfig struct {
 	// Callback to execute queries.  Can be used to inject request specific items (loggers, listeners, context variables, etc),
 	// as well as for logging
 	QueryExecutor QueryExecutor
+
+	// Callback to execute batched queries.  Can be used to inject request specific items (loggers, listeners, context variables, etc),
+	// as well as for logging
+	BatchQueryExecutor BatchQueryExecutor
 
 	// Root object to use.
 	RootObject interface{}
@@ -84,10 +100,11 @@ func NewGraphQLHandler(s *schema.Schema, config *GraphQLHandlerConfig) *GraphQLH
 	}
 
 	return &GraphQLHandler{
-		schema:          s,
-		queryBuilder:    qb,
-		queryExecutor:   qe,
-		disableGraphiQL: config.DisableGraphiQL,
+		schema:             s,
+		queryBuilder:       qb,
+		queryExecutor:      qe,
+		batchQueryExecutor: config.BatchQueryExecutor,
+		disableGraphiQL:    config.DisableGraphiQL,
 	}
 }
 
@@ -117,6 +134,22 @@ func (h *GraphQLHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			case "application/json":
 				itr := iterPool.BorrowIterator(data)
 				defer func() { iterPool.ReturnIterator(itr) }()
+				next := itr.WhatIsNext()
+
+				if next == jsoniter.ArrayValue {
+					var requests []*graphQLRequest
+					itr.ReadVal(&requests)
+
+					if itr.Error != nil {
+						w.WriteHeader(http.StatusBadRequest)
+						w.Write([]byte(fmt.Sprintf("Bad request: %v", itr.Error)))
+						return
+					}
+
+					h.executeBatch(w, req, requests)
+					return
+				}
+
 				itr.ReadVal(&msg)
 
 				if itr.Error != nil {
@@ -171,6 +204,53 @@ func serializeError(err error) []byte {
 	})
 
 	return b
+}
+
+var startArray = []byte("[")
+var endArray = []byte("]")
+var comma = []byte(",")
+
+func (h *GraphQLHandler) executeBatch(w http.ResponseWriter, req *http.Request, requests []*graphQLRequest) {
+	results := make([][]byte, len(requests))
+	toExecute := make([]BatchQueryItem, 0, len(requests))
+	for i, request := range requests {
+		vars, err := query.NewVariablesFromJSON(request.Variables)
+		if err != nil {
+			results[i] = serializeError(err)
+			continue
+		}
+		q, err := h.queryBuilder(h.schema, request.Query, request.OperationName)
+		if err != nil {
+			results[i] = serializeError(err)
+			continue
+		}
+		toExecute = append(toExecute, BatchQueryItem{
+			Query:       q,
+			Vars:        vars,
+			resultIndex: i,
+		})
+	}
+	if h.batchQueryExecutor == nil {
+		for _, qi := range toExecute {
+			result := h.queryExecutor(qi.Query, req, qi.Vars, w.Header())
+			results[qi.resultIndex] = result
+		}
+	} else {
+		batchResults := h.batchQueryExecutor(toExecute, req, w.Header())
+		for i, qi := range toExecute {
+			results[qi.resultIndex] = batchResults[i]
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	w.Write(startArray)
+	for i, result := range results {
+		if i != 0 {
+			w.Write(comma)
+		}
+		w.Write(result)
+	}
+	w.Write(endArray)
 }
 
 func (h *GraphQLHandler) writeResult(w http.ResponseWriter, req *http.Request, gqlRequest *graphQLRequest, body []byte) {
