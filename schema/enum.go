@@ -34,9 +34,10 @@ var _ Type = (*EnumType)(nil)
 type EnumType struct {
 	named
 	schemaElement
-	values map[LiteralString]*enumValueDescriptor
-	encode EncodeEnum
-	decode DecodeEnum
+	values      map[LiteralString]*enumValueDescriptor
+	encode      EncodeEnum
+	decode      DecodeEnum
+	listCreator InputListCreator
 }
 
 func (t *EnumType) isType() {}
@@ -78,6 +79,11 @@ func (t *EnumType) Decode(ctx context.Context, v LiteralValue) (interface{}, err
 		}
 	}
 	return t.decode(ctx, v)
+}
+
+// InputListCreator returns a creator for lists of this enum type
+func (t *EnumType) InputListCreator() InputListCreator {
+	return t.listCreator
 }
 
 func (t *EnumType) signature() string {

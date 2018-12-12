@@ -66,8 +66,9 @@ var _ Type = (*ScalarType)(nil)
 type ScalarType struct {
 	named
 	schemaElement
-	encode EncodeScalar
-	decode DecodeScalar
+	encode      EncodeScalar
+	decode      DecodeScalar
+	listCreator InputListCreator
 }
 
 func (t *ScalarType) isType() {}
@@ -80,6 +81,11 @@ func (t *ScalarType) Encode(ctx context.Context, v interface{}) (LiteralValue, e
 // Decode translates a literal value into a Go value
 func (t *ScalarType) Decode(ctx context.Context, v LiteralValue) (interface{}, error) {
 	return t.decode(ctx, v)
+}
+
+// InputListCreator returns a creator for lists of this scalar type
+func (t *ScalarType) InputListCreator() InputListCreator {
+	return t.listCreator
 }
 
 func (t *ScalarType) signature() string {

@@ -39,8 +39,9 @@ var _ Type = (*InputObjectType)(nil)
 type InputObjectType struct {
 	named
 	schemaElement
-	fields map[string]*InputObjectFieldDescriptor
-	decode DecodeInputObject
+	fields      map[string]*InputObjectFieldDescriptor
+	decode      DecodeInputObject
+	listCreator InputListCreator
 }
 
 func (t *InputObjectType) isType() {}
@@ -49,6 +50,11 @@ func (t *InputObjectType) isType() {}
 // representation
 func (t *InputObjectType) Decode(ctx context.Context, v LiteralValue) (interface{}, error) {
 	return t.decode(inputObjectDecodeContext{t, v, ctx})
+}
+
+// InputListCreator returns a creator for lists of this input object type
+func (t *InputObjectType) InputListCreator() InputListCreator {
+	return t.listCreator
 }
 
 // A InputObjectFieldDescriptor represents a field in a GraphQL input object.
@@ -95,10 +101,10 @@ func (i inputObjectDecodeContext) GetFieldValue(name string) (interface{}, error
 
 }
 
-func inputObjectElementDecoder(typ Type) (DecodeScalar, error) {
+func inputObjectElementDecoder(typ InputableType) (DecodeScalar, error) {
 	switch t := typ.(type) {
 	case *ListType:
-		elementDecoder, err := inputObjectElementDecoder(t.Unwrap())
+		elementDecoder, err := inputObjectElementDecoder(t.Unwrap().(InputableType))
 		if err != nil {
 			return nil, err
 		}
@@ -109,21 +115,20 @@ func inputObjectElementDecoder(typ Type) (DecodeScalar, error) {
 			}
 
 			if la, ok := in.(LiteralArray); ok {
-				result := make([]interface{}, len(la))
-				for i, e := range la {
-					v, err := elementDecoder(ctx, e)
+				listCreator := t.Unwrap().(InputableType).InputListCreator()
+				return listCreator.NewList(len(la), func(i int) (interface{}, error) {
+					v, err := elementDecoder(ctx, la[i])
 					if err != nil {
 						return nil, err
 					}
-					result[i] = v
-				}
-				return result, nil
+					return v, nil
+				})
 			}
 
 			return nil, fmt.Errorf("Input value is not an array")
 		}, nil
 	case *NotNilType:
-		elementDecoder, err := inputObjectElementDecoder(t.Unwrap())
+		elementDecoder, err := inputObjectElementDecoder(t.Unwrap().(InputableType))
 		if err != nil {
 			return nil, err
 		}

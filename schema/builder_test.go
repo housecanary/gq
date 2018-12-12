@@ -31,7 +31,7 @@ func ExampleBuilder_object() {
 
 	b := schema.NewBuilder()
 
-	b.AddScalarType("String", nil, nil)
+	b.AddScalarType("String", nil, nil, nil)
 	b.AddDirectiveDefinition("exampleDirective", schema.DirectiveLocationObject, schema.DirectiveLocationFieldDefinition).AddArgument("options", &ast.ListType{Of: &ast.SimpleType{Name: "String"}}, nil)
 
 	// Register an object type
@@ -90,7 +90,7 @@ func ExampleBuilder_interface() {
 	}
 
 	b := schema.NewBuilder()
-	b.AddScalarType("String", nil, nil) // Add non-working string scalar for example purposes
+	b.AddScalarType("String", nil, nil, nil) // Add non-working string scalar for example purposes
 
 	ot := b.AddObjectType("Foo")
 	ot.SetDescription("Foo is the root query type")
@@ -205,7 +205,7 @@ func ExampleBuilder_enum() {
 		}
 
 		return nil, fmt.Errorf("Invalid literal value: not a string")
-	})
+	}, nil)
 
 	et.AddValue("VALUE1").SetDescription("enum value 1")
 	et.AddValue("VALUE2").SetDescription("enum value 2")
@@ -258,7 +258,7 @@ func ExampleBuilder_scalar() {
 		}
 
 		return nil, fmt.Errorf("Invalid literal value: not a string")
-	})
+	}, nil)
 
 	st.SetDescription("A date encoded as yyyy-mm-ddd")
 

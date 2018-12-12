@@ -104,7 +104,7 @@ func (s *objectSelector) addField(cc *compileContext, typ *schema.ObjectType, as
 	}
 	argResolvers := make(map[string]argumentResolver)
 	for _, arg := range schemaField.Arguments() {
-		ar, err := cc.makeArgumentResolver(arg.Type())
+		ar, err := cc.makeArgumentResolver(arg.Type().(schema.InputableType))
 		if err != nil {
 			return err
 		}

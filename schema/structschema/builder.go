@@ -489,7 +489,7 @@ func (b *Builder) schemaBuilder() (*schema.Builder, error) {
 	for _, v := range b.meta {
 		switch v.Kind {
 		case typeKindEnum:
-			etb := schemaBuilder.AddEnumType(v.Name, makeEncodeEnum(v.ReflectType), makeDecodeEnum(v.ReflectType))
+			etb := schemaBuilder.AddEnumType(v.Name, makeEncodeEnum(v.ReflectType), makeDecodeEnum(v.ReflectType), reflectionInputListCreator{v.ReflectType})
 			etd := v.GqlType.(*ast.EnumTypeDefinition)
 			setSchemaElementProps(etb, etd.Description, etd.Directives)
 			for _, valueDef := range etd.EnumValueDefinitions {
@@ -544,12 +544,12 @@ func (b *Builder) schemaBuilder() (*schema.Builder, error) {
 
 		case typeKindScalar:
 			std := v.GqlType.(*ast.ScalarTypeDefinition)
-			stb := schemaBuilder.AddScalarType(v.Name, makeEncodeScalar(v.ReflectType), makeDecodeScalar(v.ReflectType))
+			stb := schemaBuilder.AddScalarType(v.Name, makeEncodeScalar(v.ReflectType), makeDecodeScalar(v.ReflectType), reflectionInputListCreator{v.ReflectType})
 			setSchemaElementProps(stb, std.Description, std.Directives)
 		case typeKindUnion:
 			unionTypes = append(unionTypes, v)
 		case typeKindInputObject:
-			iob := schemaBuilder.AddInputObjectType(v.Name, makeDecodeInputObject(v))
+			iob := schemaBuilder.AddInputObjectType(v.Name, makeDecodeInputObject(v), reflectionInputListCreator{v.ReflectType})
 			iot := v.GqlType.(*ast.InputObjectTypeDefinition)
 			setSchemaElementProps(iob, iot.Description, iot.Directives)
 			for _, f := range v.InputFields {

@@ -30,7 +30,7 @@ func (*Query) ResolveRandom() humanOrDroid {
 	}}
 }
 
-func (*Query) ResolveHuman(lookup lookupInput) (*human, error) {
+func (*Query) ResolveHuman(lookup *lookupInput) (*human, error) {
 	if !lookup.ID.Nil() {
 		return humans[lookup.ID.String()], nil
 	}

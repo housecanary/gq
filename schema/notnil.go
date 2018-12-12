@@ -28,6 +28,11 @@ func (t *NotNilType) Unwrap() Type {
 	return t.of
 }
 
+// InputListCreator returns a factory of lists of the contained type
+func (t *NotNilType) InputListCreator() InputListCreator {
+	return t.of.(InputableType).InputListCreator()
+}
+
 func (t *NotNilType) signature() string {
 	return t.of.signature() + "!"
 }

@@ -36,6 +36,16 @@ func WithArgResolver(ctx schema.ResolverContext, v interface{}) (interface{}, er
 	return arg.(types.String), err
 }
 
+func WithArgListResolver(ctx schema.ResolverContext, v interface{}) (interface{}, error) {
+	arg, err := ctx.GetArgumentValue("in")
+	ary := arg.([]types.String)
+	r := make([]interface{}, len(ary))
+	for i, e := range ary {
+		r[i] = e
+	}
+	return schema.ListOf(r...), err
+}
+
 type DummyAsyncValue struct {
 	V interface{}
 }
@@ -72,6 +82,24 @@ func FooListResolver(v interface{}) (interface{}, error) {
 	), nil
 }
 
+type stringInputListCreator struct{}
+
+func (r stringInputListCreator) NewList(size int, get func(i int) (interface{}, error)) (interface{}, error) {
+	lst := make([]types.String, size)
+	for i := 0; i < size; i++ {
+		v, err := get(i)
+		if err != nil {
+			return nil, err
+		}
+		lst[i] = v.(types.String)
+	}
+	return lst, nil
+}
+
+func (r stringInputListCreator) Creator() schema.InputListCreator {
+	panic("Not implemented")
+}
+
 type DummyQueryExecutionListener struct {
 	BaseExecutionListener
 	idleCount int
@@ -85,11 +113,13 @@ func runQuery(t *testing.T, query string, vars Variables, expectedData string, e
 	builder := schema.NewBuilder()
 	builder.AddScalarType("String", schema.EncodeScalarMarshaler, func(ctx context.Context, in schema.LiteralValue) (interface{}, error) {
 		return types.NewString(string(in.(schema.LiteralString))), nil
-	})
+	}, stringInputListCreator{})
 	qt := builder.AddObjectType("Query")
 	qt.AddField("foo", &ast.SimpleType{Name: "String"}, schema.SimpleResolver(FooResolver))
 	fooWithArg := qt.AddField("fooWithArg", &ast.SimpleType{Name: "String"}, schema.FullResolver(WithArgResolver))
 	fooWithArg.AddArgument("in", &ast.SimpleType{Name: "String"}, nil)
+	fooWithArgList := qt.AddField("fooWithArgList", &ast.ListType{Of: &ast.SimpleType{Name: "String"}}, schema.FullResolver(WithArgListResolver))
+	fooWithArgList.AddArgument("in", &ast.ListType{Of: &ast.SimpleType{Name: "String"}}, nil)
 	qt.AddField("asyncFoo", &ast.SimpleType{Name: "String"}, schema.SimpleResolver(AsyncFooResolver))
 	qt.AddField("asyncFooError", &ast.SimpleType{Name: "String"}, schema.SimpleResolver(AsyncErrorResolver))
 	qt.AddField("fooList", &ast.ListType{Of: &ast.SimpleType{Name: "String"}}, schema.SimpleResolver(FooListResolver))
@@ -118,6 +148,10 @@ func TestArgQuery(t *testing.T) {
 	runQuery(t, `{fooWithArg(in: "a")}`, nil, `{"data":{"fooWithArg":"a"}}`, 0)
 }
 
+func TestArgListQuery(t *testing.T) {
+	runQuery(t, `{fooWithArgList(in: ["a", "b"])}`, nil, `{"data":{"fooWithArgList":["a","b"]}}`, 0)
+}
+
 func TestArgQueryVars(t *testing.T) {
 	runQuery(t, `query($a: String){fooWithArg(in: $a)}`, Variables{"a": schema.LiteralString("aVar")}, `{"data":{"fooWithArg":"aVar"}}`, 0)
 }
@@ -137,7 +171,7 @@ func TestList(t *testing.T) {
 
 func BenchmarkSimpleQuery(b *testing.B) {
 	builder := schema.NewBuilder()
-	builder.AddScalarType("String", schema.EncodeScalarMarshaler, nil)
+	builder.AddScalarType("String", schema.EncodeScalarMarshaler, nil, nil)
 	builder.AddObjectType("Query").AddField("foo", &ast.SimpleType{Name: "String"}, schema.SimpleResolver(FooResolver))
 	s := builder.MustBuild("Query")
 	q, err := PrepareQuery("{foo}", "", s)
@@ -152,7 +186,7 @@ func BenchmarkSimpleQuery(b *testing.B) {
 
 func BenchmarkAsyncQuery(b *testing.B) {
 	builder := schema.NewBuilder()
-	builder.AddScalarType("String", schema.EncodeScalarMarshaler, nil)
+	builder.AddScalarType("String", schema.EncodeScalarMarshaler, nil, nil)
 	builder.AddObjectType("Query").AddField("foo", &ast.SimpleType{Name: "String"}, schema.SimpleResolver(AsyncFooResolver))
 	s := builder.MustBuild("Query")
 	q, err := PrepareQuery("{foo}", "", s)

@@ -86,6 +86,20 @@ type WrappedType interface {
 	Unwrap() Type
 }
 
+// An InputListCreator is used to create lists of input elements
+type InputListCreator interface {
+	NewList(size int, get func(i int) (interface{}, error)) (interface{}, error)
+	Creator() InputListCreator
+}
+
+// An InputableType is an interface for types that can be used as input elements
+// InputObjectType, ScalarType, ListType, NotNilType and EnumType implement this interface.
+type InputableType interface {
+	// InputListCreator returns an adapter that can be used to create lists
+	// of this type
+	InputListCreator() InputListCreator
+}
+
 func isBuiltin(v interface{}) bool {
 	if st, ok := v.(*ScalarType); ok {
 		switch st.name {

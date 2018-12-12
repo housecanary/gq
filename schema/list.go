@@ -28,6 +28,11 @@ func (t *ListType) Unwrap() Type {
 	return t.of
 }
 
+// InputListCreator returns a factory of lists of lists of the contained type
+func (t *ListType) InputListCreator() InputListCreator {
+	return t.of.(InputableType).InputListCreator().Creator()
+}
+
 // A ListValueCallback is a function invoked for each member of a list
 type ListValueCallback func(interface{})
 

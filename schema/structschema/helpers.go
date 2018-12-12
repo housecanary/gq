@@ -252,3 +252,23 @@ func makeDecodeEnum(typ reflect.Type) schema.DecodeEnum {
 		return rv.Interface(), nil
 	}
 }
+
+type reflectionInputListCreator struct {
+	typ reflect.Type
+}
+
+func (r reflectionInputListCreator) NewList(size int, get func(i int) (interface{}, error)) (interface{}, error) {
+	lst := reflect.MakeSlice(reflect.SliceOf(r.typ), size, size)
+	for i := 0; i < size; i++ {
+		v, err := get(i)
+		if err != nil {
+			return nil, err
+		}
+		lst.Index(i).Set(reflect.ValueOf(v))
+	}
+	return lst.Interface(), nil
+}
+
+func (r reflectionInputListCreator) Creator() schema.InputListCreator {
+	return reflectionInputListCreator{reflect.SliceOf(r.typ)}
+}
