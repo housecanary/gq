@@ -130,8 +130,9 @@ type ScalarTypeBuilder struct {
 	builder *Builder
 	named
 	builderSchemaElement
-	encode EncodeScalar
-	decode DecodeScalar
+	encode      EncodeScalar
+	decode      DecodeScalar
+	listCreator InputListCreator
 }
 
 // A InputObjectTypeBuilder is used to construct a InputObjectType
@@ -139,8 +140,9 @@ type InputObjectTypeBuilder struct {
 	builder *Builder
 	named
 	builderSchemaElement
-	decode DecodeInputObject
-	fields []*InputObjectFieldBuilder
+	decode      DecodeInputObject
+	listCreator InputListCreator
+	fields      []*InputObjectFieldBuilder
 }
 
 // A InputObjectFieldBuilder is used to configure a field of an input object
@@ -157,9 +159,10 @@ type EnumTypeBuilder struct {
 	builder *Builder
 	named
 	builderSchemaElement
-	encode EncodeEnum
-	decode DecodeEnum
-	values []*EnumValueBuilder
+	encode      EncodeEnum
+	decode      DecodeEnum
+	listCreator InputListCreator
+	values      []*EnumValueBuilder
 }
 
 // An EnumValueBuilder is used to configure an enum value
@@ -632,12 +635,13 @@ func (b *UnionTypeBuilder) registerType(ctx *buildContext) buildError {
 }
 
 // AddScalarType adds a scalar type to the schema being built
-func (b *Builder) AddScalarType(name string, encode EncodeScalar, decode DecodeScalar) *ScalarTypeBuilder {
+func (b *Builder) AddScalarType(name string, encode EncodeScalar, decode DecodeScalar, listCreator InputListCreator) *ScalarTypeBuilder {
 	sb := &ScalarTypeBuilder{
-		builder: b,
-		named:   named{name},
-		encode:  encode,
-		decode:  decode,
+		builder:     b,
+		named:       named{name},
+		encode:      encode,
+		decode:      decode,
+		listCreator: listCreator,
 	}
 
 	b.addTypeBuilder(sb)
@@ -650,17 +654,19 @@ func (b *ScalarTypeBuilder) registerType(ctx *buildContext) buildError {
 		schemaElement: b.toSchemaElement(),
 		encode:        b.encode,
 		decode:        b.decode,
+		listCreator:   b.listCreator,
 	}
 	b.builder.resolvedTypes[b.name] = t
 	return nil
 }
 
 // AddInputObjectType adds an input object type to the schema being built
-func (b *Builder) AddInputObjectType(name string, decode DecodeInputObject) *InputObjectTypeBuilder {
+func (b *Builder) AddInputObjectType(name string, decode DecodeInputObject, listCreator InputListCreator) *InputObjectTypeBuilder {
 	sb := &InputObjectTypeBuilder{
-		builder: b,
-		named:   named{name},
-		decode:  decode,
+		builder:     b,
+		named:       named{name},
+		decode:      decode,
+		listCreator: listCreator,
 	}
 
 	b.addTypeBuilder(sb)
@@ -686,6 +692,7 @@ func (b *InputObjectTypeBuilder) registerType(ctx *buildContext) buildError {
 		named:         b.named,
 		schemaElement: b.toSchemaElement(),
 		decode:        b.decode,
+		listCreator:   b.listCreator,
 	}
 	b.builder.resolvedTypes[b.name] = t
 	fieldsByName := make(map[string]*InputObjectFieldDescriptor)
@@ -699,7 +706,7 @@ func (b *InputObjectTypeBuilder) registerType(ctx *buildContext) buildError {
 			return err
 		}
 
-		decoder, decoderErr := inputObjectElementDecoder(fieldType)
+		decoder, decoderErr := inputObjectElementDecoder(fieldType.(InputableType))
 		if decoderErr != nil {
 			return ctx.error("%v", decoderErr)
 		}
@@ -721,28 +728,23 @@ func (b *InputObjectTypeBuilder) registerType(ctx *buildContext) buildError {
 
 func isValidArgumentType(typ Type) bool {
 	switch t := typ.(type) {
-	case *InputObjectType:
-		return true
-	case *ScalarType:
-		return true
-	case *EnumType:
-		return true
-	case *ListType:
+	case WrappedType:
 		return isValidArgumentType(t.Unwrap())
-	case *NotNilType:
-		return isValidArgumentType(t.Unwrap())
+	case InputableType:
+		return true
 	}
 
 	return false
 }
 
 // AddEnumType adds an enum type to the schema being built
-func (b *Builder) AddEnumType(name string, encode EncodeEnum, decode DecodeEnum) *EnumTypeBuilder {
+func (b *Builder) AddEnumType(name string, encode EncodeEnum, decode DecodeEnum, listCreator InputListCreator) *EnumTypeBuilder {
 	sb := &EnumTypeBuilder{
-		builder: b,
-		named:   named{name},
-		encode:  encode,
-		decode:  decode,
+		builder:     b,
+		named:       named{name},
+		encode:      encode,
+		decode:      decode,
+		listCreator: listCreator,
 	}
 
 	b.addTypeBuilder(sb)
@@ -767,6 +769,7 @@ func (b *EnumTypeBuilder) registerType(ctx *buildContext) buildError {
 		schemaElement: b.toSchemaElement(),
 		encode:        b.encode,
 		decode:        b.decode,
+		listCreator:   b.listCreator,
 	}
 	b.builder.resolvedTypes[b.name] = t
 

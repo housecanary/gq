@@ -31,10 +31,11 @@ import (
 
 type outputCtx struct {
 	*genCtx
-	meta            []gqlMeta
-	packagePrefixes map[string]string
-	listWrappers    map[string]typeAndName
-	injectors       map[string]typeAndName
+	meta              []gqlMeta
+	packagePrefixes   map[string]string
+	listWrappers      map[string]typeAndName
+	injectors         map[string]typeAndName
+	inputListCreators map[string]*inputListCreatorSpec
 }
 
 type typeAndName struct {
@@ -53,6 +54,26 @@ func (s sortTypeAndName) Less(i, j int) bool {
 }
 
 func (s sortTypeAndName) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+type inputListCreatorSpec struct {
+	typ      types.Type
+	name     string
+	maxDepth int
+}
+
+type sortInputListCreatorSpec []*inputListCreatorSpec
+
+func (s sortInputListCreatorSpec) Len() int {
+	return len(s)
+}
+
+func (s sortInputListCreatorSpec) Less(i, j int) bool {
+	return s[i].name < s[j].name
+}
+
+func (s sortInputListCreatorSpec) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
@@ -126,11 +147,14 @@ func (c *outputCtx) addEnumTypeRegistration(body *j.Group, meta *enumMeta) {
 		}), j.Nil()),
 	)
 
+	inputListCreator := j.Id(c.inputListCreatorFor(meta.Name(), meta.NamedType())).Values()
+
 	body.BlockFunc(func(reg *j.Group) {
 		reg.Id("etb").Op(":=").Id("sb").Dot("AddEnumType").Call(
 			j.Lit(meta.GQL.Name),
 			encode,
 			decode,
+			inputListCreator,
 		)
 
 		c.addSetElementProps(reg, "etb", meta.GQL.Description, meta.GQL.Directives)
@@ -236,11 +260,14 @@ func (c *outputCtx) addScalarTypeRegistration(body *j.Group, meta *scalarMeta) {
 		j.Return(j.Id("val"), j.Nil()),
 	)
 
+	inputListCreator := j.Id(c.inputListCreatorFor(meta.Name(), meta.NamedType())).Values()
+
 	body.BlockFunc(func(reg *j.Group) {
 		reg.Id("scb").Op(":=").Id("sb").Dot("AddScalarType").Call(
 			j.Lit(meta.Name()),
 			encode,
 			decode,
+			inputListCreator,
 		)
 
 		c.addSetElementProps(reg, "scb", meta.GQL.Description, meta.GQL.Directives)
@@ -310,6 +337,7 @@ func (c *outputCtx) addInputObjectTypeRegistration(body *j.Group, meta *inputObj
 
 		sort.Stable(sortInputFieldMetasByName(meta.Fields))
 		for _, f := range meta.Fields {
+			c.ensureInputListDepth(f.GQL.Type, 0)
 			g.Block(
 				j.List(j.Id("fieldVal"), j.Id("err")).Op(":=").Id("ctx").Dot("GetFieldValue").Call(j.Lit(f.GQL.Name)),
 				j.If(j.Id("err").Op("!=").Nil()).Block(
@@ -330,8 +358,10 @@ func (c *outputCtx) addInputObjectTypeRegistration(body *j.Group, meta *inputObj
 		g.Return(j.Id("val"), j.Nil())
 	})
 
+	inputListCreator := j.Id(c.inputListCreatorFor(meta.Name(), meta.NamedType())).Values()
+
 	body.BlockFunc(func(reg *j.Group) {
-		reg.Id("iob").Op(":=").Id("sb").Dot("AddInputObjectType").Call(j.Lit(meta.Name()), decode)
+		reg.Id("iob").Op(":=").Id("sb").Dot("AddInputObjectType").Call(j.Lit(meta.Name()), decode, inputListCreator)
 		c.addSetElementProps(reg, "iob", meta.GQL.Description, meta.GQL.Directives)
 		for _, f := range meta.Fields {
 			reg.BlockFunc(func(g *j.Group) {
@@ -561,6 +591,7 @@ func (c *outputCtx) addObjectField(reg *j.Group, objTyp *j.Statement, meta *fiel
 		g.Id("fb").Op(":=").Id("otb").Dot("AddField").Call(j.Lit(meta.GQL.Name), c.createAstType(meta.GQL.Type), c.createResolver(objTyp, meta))
 		c.addSetElementProps(g, "fb", meta.GQL.Description, meta.GQL.Directives)
 		for _, a := range meta.GQL.ArgumentsDefinition {
+			c.ensureInputListDepth(a.Type, 0)
 			g.BlockFunc(func(g *j.Group) {
 				g.Id("ab").Op(":=").Id("fb").Dot("AddArgument").Call(j.Lit(a.Name), c.createAstType(a.Type), c.createAstValue(a.DefaultValue))
 				c.addSetElementProps(g, "ab", a.Description, a.Directives)
@@ -662,6 +693,35 @@ func (c *outputCtx) listWrapperFor(typ types.Type) string {
 	return name
 }
 
+func (c *outputCtx) inputListCreatorFor(schemaName string, typ types.Type) string {
+	if existing, ok := c.inputListCreators[schemaName]; ok {
+		existing.typ = typ
+		return existing.name
+	}
+
+	name := fmt.Sprintf("inputListCreator%s", kace.Pascal(schemaName))
+	c.inputListCreators[schemaName] = &inputListCreatorSpec{name: name, typ: typ, maxDepth: 0}
+	return name
+}
+
+func (c *outputCtx) ensureInputListDepth(typ ast.Type, depth int) {
+	switch v := typ.(type) {
+	case *ast.SimpleType:
+		if existing, ok := c.inputListCreators[v.Name]; ok {
+			if depth > existing.maxDepth {
+				existing.maxDepth = depth
+			}
+		} else {
+			name := fmt.Sprintf("inputListCreator%s", kace.Pascal(v.Name))
+			c.inputListCreators[v.Name] = &inputListCreatorSpec{name: name, maxDepth: depth}
+		}
+	case *ast.ListType:
+		c.ensureInputListDepth(v.Of, depth+1)
+	case *ast.NotNilType:
+		c.ensureInputListDepth(v.Of, depth+1)
+	}
+}
+
 func (c *outputCtx) addListWrapperType(typ types.Type, name string, g *j.Group) {
 	g.Type().Id(name).Index().Add(c.toTypeSignature(typ))
 	g.Func().Params(j.Id("w").Id(name)).Id("Len").Params().Int().BlockFunc(func(g *j.Group) {
@@ -673,6 +733,46 @@ func (c *outputCtx) addListWrapperType(typ types.Type, name string, g *j.Group) 
 			g.Id("cb").Call(j.Id("e"))
 		})
 	})
+}
+
+func (c *outputCtx) addInputListCreatorType(name string, typ types.Type, nextName string, g *j.Group) {
+	g.Type().Id(name).Struct()
+	g.Func().Params(j.Id(name)).Id("NewList").Params(
+		j.Id("size").Int(),
+		j.Id("get").Func().Params(
+			j.Id("i").Int(),
+		).Params(
+			j.Interface(),
+			j.Error(),
+		),
+	).Params(
+		j.Interface(),
+		j.Error(),
+	).Block(
+		j.Id("lst").Op(":=").Make(j.Index().Add(c.toTypeSignature(typ)), j.Id("size")),
+		j.For(j.Id("i").Op(":=").Lit(0), j.Id("i").Op("<").Id("size"), j.Id("i").Op("++")).Block(
+			j.List(j.Id("v"), j.Id("err")).Op(":=").Id("get").Call(j.Id("i")),
+			j.If(j.Id("err").Op("!=").Nil()).Block(
+				j.Return(j.List(j.Nil(), j.Id("err"))),
+			),
+			j.Id("lst").Index(j.Id("i")).Op("=").Id("v").Assert(c.toTypeSignature(typ)),
+		),
+		j.Return(j.Id("lst"), j.Nil()),
+	)
+
+	if nextName != "" {
+		g.Func().Params(j.Id(name)).Id("Creator").Params().Params(
+			j.Qual("github.com/housecanary/gq/schema", "InputListCreator"),
+		).Block(
+			j.Return(j.Id(nextName).Values()),
+		)
+	} else {
+		g.Func().Params(j.Id(name)).Id("Creator").Params().Params(
+			j.Qual("github.com/housecanary/gq/schema", "InputListCreator"),
+		).Block(
+			j.Panic(j.Lit("Unreachable code - static analysis of the schema indicates that this level of list wrapping cannot be reached")),
+		)
+	}
 }
 
 func (c *outputCtx) injectorName(v *types.Var) string {
@@ -794,7 +894,7 @@ func (c *genCtx) createOutput() error {
 	}
 	sort.Stable(sortMetaByName(allMetas))
 
-	oc := &outputCtx{c, allMetas, make(map[string]string), make(map[string]typeAndName), make(map[string]typeAndName)}
+	oc := &outputCtx{c, allMetas, make(map[string]string), make(map[string]typeAndName), make(map[string]typeAndName), make(map[string]*inputListCreatorSpec)}
 	f := j.NewFile(c.outputPackageName)
 
 	f.HeaderComment("// Code generated by GQ DO NOT EDIT.")
@@ -846,6 +946,30 @@ func (c *genCtx) createOutput() error {
 		builderParamsGroup.Add(
 			j.Line().Id(e.name).Func().Params(j.Qual("context", "Context")).Add(oc.toTypeSignature(e.typ)),
 		)
+	}
+
+	allInputListCreators := make(sortInputListCreatorSpec, 0)
+	for _, v := range oc.inputListCreators {
+		allInputListCreators = append(allInputListCreators, v)
+	}
+	sort.Stable(allInputListCreators)
+
+	for _, e := range allInputListCreators {
+		typ := e.typ
+		for i := 0; i <= e.maxDepth; i++ {
+			var name string
+			var nextName string
+			if i == 0 {
+				name = e.name
+			} else {
+				name = fmt.Sprintf("%s_%v", e.name, i)
+			}
+			if i < e.maxDepth {
+				nextName = fmt.Sprintf("%s_%v", e.name, i+1)
+			}
+			oc.addInputListCreatorType(name, typ, nextName, f.Group)
+			typ = types.NewSlice(typ)
+		}
 	}
 
 	err := os.MkdirAll(c.outputPath, 0777)

@@ -60,6 +60,12 @@ func (r *Root) ResolveHello(name types.String) types.String {
 func (r *Root) ResolvePoliteHello(title *TitleInput) types.String {
 	greeting := fmt.Sprintf("Hello %s", title.Title.String())
 
+	for _, e1 := range title.AdditionalTitles {
+		for _, e2 := range e1 {
+			greeting += " " + e2.String()
+		}
+	}
+
 	if title.LastName.Nil() {
 		greeting += " " + title.FirstName.String()
 	} else {
@@ -138,6 +144,7 @@ type TitleInput struct {
 	FirstName                types.String
 	LastName                 types.String
 	Title                    types.String `gq:":String!;Title of the person (i.e. Dr/Mr/Mrs/Ms etc)"`
+	AdditionalTitles         [][]types.String
 }
 
 // If an input object has a Validate method matching this signature, it will
@@ -281,6 +288,11 @@ func Example() {
 			title: "Mr"
 			lastName: "Random"
 		})
+		politeHelloLong: politeHello(title: {
+			title: "Professor"
+			additionalTitles: [["Doctor"]]
+			lastName: "Random"
+		})
 		politeHelloError: politeHello(title: {
 			title: "Mr"
 		})
@@ -389,6 +401,8 @@ func Example() {
 	//
 	//   "A name and an optional title"
 	//   input TitleInput {
+	//     additionalTitles: [[String]]
+	//
 	//     firstName: String
 	//
 	//     lastName: String
@@ -410,6 +424,7 @@ func Example() {
 	//     "randomNumber": 7,
 	//     "hello": "Hello Bob",
 	//     "politeHello": "Hello Mr Random",
+	//     "politeHelloLong": "Hello Professor Doctor Random",
 	//     "politeHelloError": null,
 	//     "cannedHello": "Hi!",
 	//     "cannedHelloLong": "Good day",
@@ -434,7 +449,7 @@ func Example() {
 	//       ],
 	//       "locations": [
 	//         {
-	//           "line": 9,
+	//           "line": 14,
 	//           "column": 3
 	//         }
 	//       ]
@@ -446,7 +461,7 @@ func Example() {
 	//       ],
 	//       "locations": [
 	//         {
-	//           "line": 14,
+	//           "line": 19,
 	//           "column": 3
 	//         }
 	//       ]
@@ -459,7 +474,7 @@ func Example() {
 	//       ],
 	//       "locations": [
 	//         {
-	//           "line": 23,
+	//           "line": 28,
 	//           "column": 5
 	//         }
 	//       ]

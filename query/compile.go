@@ -80,14 +80,14 @@ func (c *compileContext) expandFragment(typeCondition string, selections ast.Sel
 
 // makeArgumentResolver creates a function that can translate a literal value into
 // the corresponding runtime object using the schema
-func (c *compileContext) makeArgumentResolver(typ schema.Type) (argumentResolver, error) {
+func (c *compileContext) makeArgumentResolver(typ schema.InputableType) (argumentResolver, error) {
 	switch t := typ.(type) {
 	case *schema.InputObjectType:
 		return func(ctx context.Context, v schema.LiteralValue) (interface{}, error) {
 			return t.Decode(ctx, v)
 		}, nil
 	case *schema.ListType:
-		elementResolver, err := c.makeArgumentResolver(t.Unwrap())
+		elementResolver, err := c.makeArgumentResolver(t.Unwrap().(schema.InputableType))
 		if err != nil {
 			return nil, err
 		}
@@ -95,32 +95,29 @@ func (c *compileContext) makeArgumentResolver(typ schema.Type) (argumentResolver
 			if v == nil {
 				return nil, nil
 			}
+
+			listCreator := t.Unwrap().(schema.InputableType).InputListCreator()
+
 			if av, ok := v.(schema.LiteralArray); ok {
-				result := make([]interface{}, len(av))
-				for i, e := range av {
-					resultElement, err := elementResolver(ctx, e)
-					if err != nil {
-						return nil, err
-					}
-					result[i] = resultElement
-				}
-				return result, nil
+				return listCreator.NewList(len(av), func(i int) (interface{}, error) {
+					return elementResolver(ctx, av[i])
+				})
 			}
 
 			// if we get a non-list value we have to wrap into a single element
 			// list.
 			// See https://facebook.github.io/graphql/June2018/#sec-Type-System.List
-			result := make([]interface{}, 1)
 			resultElement, err := elementResolver(ctx, v)
 			if err != nil {
 				return nil, err
 			}
-			result[0] = resultElement
-			return result, nil
+			return listCreator.NewList(1, func(i int) (interface{}, error) {
+				return resultElement, nil
+			})
 		}, nil
 
 	case *schema.NotNilType:
-		elementResolver, err := c.makeArgumentResolver(t.Unwrap())
+		elementResolver, err := c.makeArgumentResolver(t.Unwrap().(schema.InputableType))
 		if err != nil {
 			return nil, err
 		}
