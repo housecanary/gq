@@ -100,6 +100,79 @@ func (q *PreparedQuery) Execute(ctx context.Context, rootValue interface{}, vari
 	return content
 }
 
+// Batch contains a batch of queries that execute together using the same context and listener
+type Batch struct {
+	queries    []*PreparedQuery
+	variables  []Variables
+	rootValues []interface{}
+}
+
+// Add adds a query to this batch
+func (b *Batch) Add(q *PreparedQuery, rootValue interface{}, variables Variables) {
+	b.queries = append(b.queries, q)
+	b.variables = append(b.variables, variables)
+	b.rootValues = append(b.rootValues, rootValue)
+}
+
+// Execute executes the entire batch of queries
+func (b *Batch) Execute(ctx context.Context, listener ExecutionListener) [][]byte {
+	// NOTE: This code contains a good deal of duplication with PreparedQuery.Execute
+	// Need to consider if this common code can be factored out.
+	if listener == nil {
+		listener = BaseExecutionListener{}
+	}
+
+	// Start execution of all queries onto a consolidated worklist.  This will
+	// let us group loads across all queries in the batch.
+	var deferred worklist
+	collectors := make([]*vJSONCollector, len(b.queries))
+	for i, q := range b.queries {
+		cc := acquireJSONCollectorContext()
+		defer cc.release()
+		collector := &vJSONCollector{cc: cc}
+		collectors[i] = collector
+		rootValue := b.rootValues[i]
+		variables := b.variables[i]
+		q.root.prepareCollector(collector)
+		deferred.Add(q.root.apply(exeContext{ctx, listener, variables}, rootValue, collector))
+	}
+
+	// Drain the worklist
+	if deferred != nil {
+		for cont := deferred.Continue; cont != nil; {
+			listener.NotifyIdle()
+			cont = cont()
+		}
+	}
+
+	// Prepare the results
+	results := make([][]byte, len(b.queries))
+	for i, collector := range collectors {
+		stream := streamPool.BorrowStream(nil)
+
+		stream.WriteObjectStart()
+		stream.WriteObjectField("data")
+		errors, ok := collector.serializeJSON(stream, 0)
+		if !ok {
+			stream.Reset(nil)
+			stream.WriteObjectStart()
+			stream.WriteObjectField("data")
+			stream.WriteNil()
+		}
+		serializeErrors(stream, errors)
+		stream.WriteObjectEnd()
+
+		collector.release()
+
+		buf := stream.Buffer()
+		results[i] = make([]byte, len(buf))
+		copy(results[i], buf)
+		streamPool.ReturnStream(stream)
+	}
+
+	return results
+}
+
 // PrepareQuery parses the supplied query text, and compiles it to a PreparedQuery which can then
 // be executed many times.  If the supplied query is invalid, nil and an error describing the problem
 // are returned.
