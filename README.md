@@ -43,7 +43,7 @@ A common use case for GraphQL servers is loading data from other systems (databa
 
 Existing libraries all make it difficult to optimally batch queries: there is no hook to indicate good batch points, so the libraries rely on timeouts (i.e. every 10 msec batch up all pending queries and run them). This leads to unecessary latency (i.e. if batch timeout = 20ms and the query has a depth of 5 up to 100ms of time is wasted) or suboptimal batching (i.e. setting a lower timeout, which then may not include all queries).
 
-Event loop based systems like the Node and Python implementations solve this relatively easily:  they simply schedule batches on the next event loop tick. The net result of this is that batches are issued ASAP once all synchronous resovlers are executed.
+Event loop based systems like the Node and Python implementations solve this relatively easily:  they simply schedule batches on the next event loop tick. The net result of this is that batches are issued ASAP once all synchronous resolvers are executed.
 
 GQ attempts to mimic the behavior of event loop based systems by notifying a listener when all resolvers are blocked. The listener can use this notification to batch and send pending queries to backend systems.
 
