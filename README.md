@@ -90,7 +90,7 @@ Object types are defined as a plain struct. This struct may include a structsche
 
 Example:
 
-```
+```go
 type Human struct {
     structschema.Meta `
         "A Human contains information about a humanoid person"
@@ -144,7 +144,7 @@ object Human {
 Interface types are defined as a struct with a single `Interface` field. The `Interface` field should be of type `interface{...}` and define any methods needed on implementations of the interface. A struct field tag defining fields of the interface can be attached to the `Interface` field.
 
 Example:
-```
+```go
 type Named struct {
     Interface interface {
         isNamed()
@@ -171,7 +171,7 @@ func (Human) isNamed()
 Interface types are defined as a struct with a single `Union` field. The `Union` field should be of type `interface{...}` and define any methods needed on members of the union. A struct field tag with a description or directives to apply to the union can be attached to the field.
 
 Example:
-```
+```go
 type PetOrHuman struct {
     Union interface {
         isPetOrHuman()
@@ -197,7 +197,7 @@ Enum types are defined as a struct with an embedded structschema.Enum field. The
 
 Example:
 
-```
+```go
 type Drinks struct {
     structschema.Enum `"Types of drinks you can order" {
         "A sweet carbonated drink."
@@ -230,7 +230,7 @@ If the input object defines a `Validate() error` method, it will be called when 
 
 Example:
 
-```
+```go
 type NameInput struct {
     structschema.InputObject `"A full name"`
     First  String
@@ -246,7 +246,7 @@ func (n *NameInput) Validate() error {
 ### Querying
 
 There are two steps to querying a schema. First, you prepare a query:
-```
+```go
 queryText := `
     query a { foo }
     query b { bar }
@@ -266,7 +266,7 @@ The variables is a dict of variables available to the query.
 The query listener is a `query.ExecutionListener` that can be used to log execution of the query, and schedule loads at idle points.
 
 Example:
-```
+```go
 vars := query.NewVariablesFromJSON(jsonDataFromSomewhere)
 response := q.Execute(context.Background(), &RootObject{}, vars, nil)
 ```
@@ -277,7 +277,7 @@ Many resolver methods will want to schedule asynchronous work. The model for thi
 
 If using the `structschema` package, async resolvers should follow one of these patterns:
 
-```
+```go
 func (t *SomeType) ResolveFoo(loader *someLoaderType) <-chan FooType {
     var c <-chan FooType
     c = loader.enqueueLoadFoo(t.id)
@@ -285,7 +285,7 @@ func (t *SomeType) ResolveFoo(loader *someLoaderType) <-chan FooType {
 }
 ```
 
-```
+```go
 func (t *SomeType) ResolveFoo(loader *someLoaderType) func() (FooType, error) {
     var c <-chan BarOrError
     c = loader.enqueueLoadFoo(t.id)
