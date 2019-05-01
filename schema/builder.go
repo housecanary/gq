@@ -785,7 +785,7 @@ func (b *EnumTypeBuilder) registerType(ctx *buildContext) buildError {
 	values := make(map[LiteralString]*enumValueDescriptor)
 	for _, e := range b.values {
 		if _, ok := values[LiteralString(e.name)]; ok {
-			return ctx.error("Duplicate enum value %s", e)
+			return ctx.error("Duplicate enum value %s", e.name)
 		}
 		values[LiteralString(e.name)] = &enumValueDescriptor{
 			named:         e.named,
