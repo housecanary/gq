@@ -65,15 +65,17 @@ func NewBuilder() *Builder {
 		make(map[string]Type),
 		nil,
 		nil,
+		false,
 	}
 }
 
 // A Builder is used to create a Schema
 type Builder struct {
-	typeBuilders   map[string]typeBuilder
-	resolvedTypes  map[string]Type
-	directives     []*DirectiveDefinitionBuilder
-	deferredErrors []error
+	typeBuilders         map[string]typeBuilder
+	resolvedTypes        map[string]Type
+	directives           []*DirectiveDefinitionBuilder
+	deferredErrors       []error
+	disableIntrospection bool
 }
 
 type typeBuilder interface {
@@ -310,31 +312,33 @@ func (b *Builder) Build(queryTypeName string) (*Schema, error) {
 
 	s := &Schema{QueryType: qt, allTypes: b.resolvedTypes, directives: directives}
 
-	// Add in introspection meta fields
-	qt.fieldsByName["__schema"] = &FieldDescriptor{
-		named: named{"__schema"},
-		typ:   introspectionSchemaType,
-		r: SimpleResolver(func(v interface{}) (interface{}, error) {
-			return s, nil
-		}),
-	}
+	if !b.disableIntrospection {
+		// Add in introspection meta fields
+		qt.fieldsByName["__schema"] = &FieldDescriptor{
+			named: named{"__schema"},
+			typ:   introspectionSchemaType,
+			r: SimpleResolver(func(v interface{}) (interface{}, error) {
+				return s, nil
+			}),
+		}
 
-	qt.fieldsByName["__type"] = &FieldDescriptor{
-		named: named{"__type"},
-		typ:   introspectionTypeType,
-		arguments: []*ArgumentDescriptor{
-			&ArgumentDescriptor{
-				named: named{"name"},
-				typ:   &NotNilType{introspectionStringType},
+		qt.fieldsByName["__type"] = &FieldDescriptor{
+			named: named{"__type"},
+			typ:   introspectionTypeType,
+			arguments: []*ArgumentDescriptor{
+				&ArgumentDescriptor{
+					named: named{"name"},
+					typ:   &NotNilType{introspectionStringType},
+				},
 			},
-		},
-		r: FullResolver(func(ctx ResolverContext, v interface{}) (interface{}, error) {
-			name, err := ctx.GetArgumentValue("name")
-			if err != nil {
-				return nil, err
-			}
-			return s.allTypes[name.(string)], nil
-		}),
+			r: FullResolver(func(ctx ResolverContext, v interface{}) (interface{}, error) {
+				name, err := ctx.GetArgumentValue("name")
+				if err != nil {
+					return nil, err
+				}
+				return s.allTypes[name.(string)], nil
+			}),
+		}
 	}
 
 	return s, nil
@@ -345,6 +349,11 @@ func (b *Builder) MustBuild(queryTypeName string) *Schema {
 	s, err := b.Build(queryTypeName)
 	must(err)
 	return s
+}
+
+// DisableIntrospection disables introspection in this builder
+func (b *Builder) DisableIntrospection() {
+	b.disableIntrospection = true
 }
 
 func (b *Builder) addTypeBuilder(tb typeBuilder) {
