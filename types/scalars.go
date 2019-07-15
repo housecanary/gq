@@ -210,6 +210,14 @@ func (v *String) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements json.Marshaler
+func (v String) MarshalJSON() ([]byte, error) {
+	if !v.present {
+		return []byte{'n', 'u', 'l', 'l'}, nil
+	}
+	return json.Marshal(v.v)
+}
+
 // Scan implements sql.Scanner
 func (v *String) Scan(src interface{}) error {
 	if src == nil {
@@ -328,6 +336,14 @@ func (v *Int) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements json.Marshaler
+func (v Int) MarshalJSON() ([]byte, error) {
+	if !v.present {
+		return []byte{'n', 'u', 'l', 'l'}, nil
+	}
+	return json.Marshal(v.v)
+}
+
 // Scan implements sql.Scanner
 func (v *Int) Scan(src interface{}) error {
 	if src == nil {
@@ -442,6 +458,14 @@ func (v *Float) UnmarshalJSON(data []byte) error {
 	}
 	v.present = true
 	return nil
+}
+
+// MarshalJSON implements json.Marshaler
+func (v Float) MarshalJSON() ([]byte, error) {
+	if !v.present {
+		return []byte{'n', 'u', 'l', 'l'}, nil
+	}
+	return json.Marshal(v.v)
 }
 
 // Scan implements sql.Scanner
@@ -561,6 +585,14 @@ func (v *Boolean) UnmarshalJSON(data []byte) error {
 	}
 	v.present = true
 	return nil
+}
+
+// MarshalJSON implements json.Marshaler
+func (v Boolean) MarshalJSON() ([]byte, error) {
+	if !v.present {
+		return []byte{'n', 'u', 'l', 'l'}, nil
+	}
+	return json.Marshal(v.v)
 }
 
 // Scan implements sql.Scanner
