@@ -538,6 +538,11 @@ func (c *outputCtx) addResultHandler(g *j.Group, sig *types.Signature) {
 				g.Return(c.prepReturnValue(j.Id("result"), ch.Elem()), j.Nil())
 			}), j.Nil())
 		} else {
+			if _, ok := results.At(0).Type().(*types.Pointer); ok {
+				g.If(j.Id("result").Op("==").Nil()).Block(
+					j.Return(j.Nil(), j.Nil()),
+				)
+			}
 			g.Return(c.prepReturnValue(j.Id("result"), results.At(0).Type()), j.Nil())
 		}
 	} else {
