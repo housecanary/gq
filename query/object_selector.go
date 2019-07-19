@@ -147,6 +147,10 @@ func safeResolve(ctx exeContext, value interface{}, f *objectSelectorField, cb R
 
 	if sr, ok := resolver.(schema.SafeResolver); ok {
 		fieldValue, err = sr.ResolveSafe(resolverContext, value)
+		fieldValue, err = maybeNotifyCb(fieldValue, err, cb)
+		if err != nil {
+			ctx.listener.NotifyError(err)
+		}
 	} else {
 		defer func() {
 			if r := recover(); r != nil {

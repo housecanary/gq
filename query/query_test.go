@@ -19,17 +19,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/housecanary/gq/ast"
 	"github.com/housecanary/gq/schema"
 	"github.com/housecanary/gq/types"
-
-	"github.com/housecanary/gq/ast"
 )
 
 type Query struct{}
-
-func FooResolver(v interface{}) (interface{}, error) {
-	return types.NewString("bar"), nil
-}
 
 func WithArgResolver(ctx schema.ResolverContext, v interface{}) (interface{}, error) {
 	arg, err := ctx.GetArgumentValue("in")
@@ -44,30 +39,6 @@ func WithArgListResolver(ctx schema.ResolverContext, v interface{}) (interface{}
 		r[i] = e
 	}
 	return schema.ListOf(r...), err
-}
-
-type DummyAsyncValue struct {
-	V interface{}
-}
-
-func (v DummyAsyncValue) Await(context.Context) (interface{}, error) {
-	return v.V, nil
-}
-
-type ErrorAsyncValue struct {
-	E error
-}
-
-func (v ErrorAsyncValue) Await(context.Context) (interface{}, error) {
-	return nil, v.E
-}
-
-func AsyncFooResolver(v interface{}) (interface{}, error) {
-	return DummyAsyncValue{types.NewString("bar")}, nil
-}
-
-func AsyncErrorResolver(v interface{}) (interface{}, error) {
-	return ErrorAsyncValue{fmt.Errorf("Test Error")}, nil
 }
 
 func FooListResolver(v interface{}) (interface{}, error) {
@@ -100,28 +71,19 @@ func (r stringInputListCreator) Creator() schema.InputListCreator {
 	panic("Not implemented")
 }
 
-type DummyQueryExecutionListener struct {
-	BaseExecutionListener
-	idleCount int
-}
-
-func (c *DummyQueryExecutionListener) NotifyIdle() {
-	c.idleCount++
-}
-
 func runQuery(t *testing.T, query string, vars Variables, expectedData string, expectedIdleCount int) {
 	builder := schema.NewBuilder()
 	builder.AddScalarType("String", schema.EncodeScalarMarshaler, func(ctx context.Context, in schema.LiteralValue) (interface{}, error) {
 		return types.NewString(string(in.(schema.LiteralString))), nil
 	}, stringInputListCreator{})
 	qt := builder.AddObjectType("Query")
-	qt.AddField("foo", &ast.SimpleType{Name: "String"}, schema.SimpleResolver(FooResolver))
+	qt.AddField("foo", &ast.SimpleType{Name: "String"}, stringResolver("bar"))
 	fooWithArg := qt.AddField("fooWithArg", &ast.SimpleType{Name: "String"}, schema.FullResolver(WithArgResolver))
 	fooWithArg.AddArgument("in", &ast.SimpleType{Name: "String"}, nil)
 	fooWithArgList := qt.AddField("fooWithArgList", &ast.ListType{Of: &ast.SimpleType{Name: "String"}}, schema.FullResolver(WithArgListResolver))
 	fooWithArgList.AddArgument("in", &ast.ListType{Of: &ast.SimpleType{Name: "String"}}, nil)
-	qt.AddField("asyncFoo", &ast.SimpleType{Name: "String"}, schema.SimpleResolver(AsyncFooResolver))
-	qt.AddField("asyncFooError", &ast.SimpleType{Name: "String"}, schema.SimpleResolver(AsyncErrorResolver))
+	qt.AddField("asyncFoo", &ast.SimpleType{Name: "String"}, asyncResolver(stringResolver("bar")))
+	qt.AddField("asyncFooError", &ast.SimpleType{Name: "String"}, asyncResolver(errorResolver(fmt.Errorf("Test Error"))))
 	qt.AddField("fooList", &ast.ListType{Of: &ast.SimpleType{Name: "String"}}, schema.SimpleResolver(FooListResolver))
 	s := builder.MustBuild("Query")
 	q, err := PrepareQuery(query, "", s)
@@ -129,7 +91,7 @@ func runQuery(t *testing.T, query string, vars Variables, expectedData string, e
 		panic(err)
 	}
 
-	listener := &DummyQueryExecutionListener{}
+	listener := &idleCountExecutionListener{}
 	result := string(q.Execute(context.Background(), &Query{}, vars, listener))
 	if result != expectedData {
 		t.Errorf("Expected result %v, got %v", expectedData, result)
@@ -172,7 +134,7 @@ func TestList(t *testing.T) {
 func BenchmarkSimpleQuery(b *testing.B) {
 	builder := schema.NewBuilder()
 	builder.AddScalarType("String", schema.EncodeScalarMarshaler, nil, nil)
-	builder.AddObjectType("Query").AddField("foo", &ast.SimpleType{Name: "String"}, schema.SimpleResolver(FooResolver))
+	builder.AddObjectType("Query").AddField("foo", &ast.SimpleType{Name: "String"}, stringResolver("bar"))
 	s := builder.MustBuild("Query")
 	q, err := PrepareQuery("{foo}", "", s)
 	if err != nil {
@@ -187,7 +149,7 @@ func BenchmarkSimpleQuery(b *testing.B) {
 func BenchmarkAsyncQuery(b *testing.B) {
 	builder := schema.NewBuilder()
 	builder.AddScalarType("String", schema.EncodeScalarMarshaler, nil, nil)
-	builder.AddObjectType("Query").AddField("foo", &ast.SimpleType{Name: "String"}, schema.SimpleResolver(AsyncFooResolver))
+	builder.AddObjectType("Query").AddField("foo", &ast.SimpleType{Name: "String"}, asyncResolver(stringResolver("bar")))
 	s := builder.MustBuild("Query")
 	q, err := PrepareQuery("{foo}", "", s)
 	if err != nil {
