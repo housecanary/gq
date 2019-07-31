@@ -386,11 +386,17 @@ func (c *outputCtx) createFieldResolver(objTyp *j.Statement, meta *fieldMeta) *j
 	fv := j.Id("v").Assert(j.Op("*").Add(objTyp)).Dot(meta.Field.Name())
 	return j.Qual("github.com/housecanary/gq/schema", "MarkSafe").Call(
 		j.Qual("github.com/housecanary/gq/schema", "SimpleResolver").Call(
-			j.Func().Params(j.Id("v").Interface()).Params(j.Interface(), j.Id("error")).Block(
-				j.If(j.Id("v").Op("==").Nil().Op("||").Id("v").Assert(j.Op("*").Add(objTyp)).Op("==").Nil()).Block(
+			j.Func().Params(j.Id("v").Interface()).Params(j.Interface(), j.Id("error")).BlockFunc(func(g *j.Group) {
+				g.If(j.Id("v").Op("==").Nil().Op("||").Id("v").Assert(j.Op("*").Add(objTyp)).Op("==").Nil()).Block(
 					j.Return(j.Nil(), j.Nil()),
-				),
-				j.ReturnFunc(func(g *j.Group) {
+				)
+
+				if _, ok := meta.Field.Type().(*types.Pointer); ok {
+					g.If(fv).Op("==").Nil().Block(
+						j.Return(j.Nil(), j.Nil()),
+					)
+				}
+				g.ReturnFunc(func(g *j.Group) {
 					switch t := meta.Field.Type().(type) {
 					case *types.Slice:
 						g.Add(c.prepReturnValue(fv, t))
@@ -400,8 +406,8 @@ func (c *outputCtx) createFieldResolver(objTyp *j.Statement, meta *fieldMeta) *j
 						g.Op("&").Add(fv)
 					}
 					g.Nil()
-				}),
-			),
+				})
+			}),
 		),
 	)
 }

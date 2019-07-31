@@ -97,7 +97,7 @@ func (m *fieldMeta) buildFieldResolver(b *Builder, structTyp reflect.Type, name 
 		if isListType {
 			return toList(fv), nil
 		}
-		return fv.Interface(), nil
+		return fixNil(fv), nil
 	})
 	return nil
 }
