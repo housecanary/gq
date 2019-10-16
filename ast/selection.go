@@ -17,7 +17,7 @@ package ast
 import (
 	"io"
 
-	text "github.com/tonnerre/golang-text"
+	text "github.com/kr/text"
 )
 
 type SelectionSet []Selection
