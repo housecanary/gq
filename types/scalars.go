@@ -487,6 +487,15 @@ func (v *Float) Scan(src interface{}) error {
 			*v = Float{present: true, v: 0}
 		}
 		return nil
+	case []uint8:
+		s := string(t)
+		f, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return fmt.Errorf("cannot scan value []uint8 (%v) to a float", src)
+		}
+
+		*v = Float{v: f, present: true}
+		return nil
 	}
 	return fmt.Errorf("Cannot scan value %v to a float", src)
 }
