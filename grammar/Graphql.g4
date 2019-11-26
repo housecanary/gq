@@ -322,9 +322,9 @@ partialInterfaceTypeDefinition :
     description? directives? fieldsDefinition;
 
 partialUnionTypeDefinition :
-    description? UNION name directives? unionMembership |
-    description? name directives? unionMembership |
-    description? directives? unionMembership |
+    description? UNION name directives? unionMembership? |
+    description? name directives? unionMembership? |
+    description? directives? unionMembership? |
     description;
 
 partialScalarTypeDefinition : description? name? directives?;

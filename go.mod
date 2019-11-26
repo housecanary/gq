@@ -1,5 +1,7 @@
 module github.com/housecanary/gq
 
+go 1.13
+
 require (
 	github.com/antlr/antlr4 v0.0.0-20180905200841-432022fc1ca0
 	github.com/codemodus/kace v0.5.1
