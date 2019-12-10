@@ -8,6 +8,7 @@ require (
 	github.com/dave/jennifer v1.1.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/hashicorp/go-multierror v1.0.0
+	github.com/housecanary/nillabletypes v0.0.0-20191121195124-9de1664bfa13
 	github.com/json-iterator/go v1.1.5
 	github.com/kr/text v0.1.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

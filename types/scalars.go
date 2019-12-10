@@ -15,8 +15,6 @@
 package types
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -25,6 +23,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 
 	"github.com/housecanary/gq/schema"
+	"github.com/housecanary/nillabletypes"
 )
 
 // PermissiveInputParsing allows more input value conversions than allowed by the spec if set to true
@@ -118,63 +117,54 @@ func (v *ID) Scan(src interface{}) error {
 	return fmt.Errorf("Cannot scan value %v to a string", src)
 }
 
+type ns = nillabletypes.String
+
 // String represents the GraphQL built in String type
 type String struct {
-	v       string
-	present bool
+	ns
 }
 
 // NewString makes a new string
 func NewString(v string) String {
-	return String{v, true}
+	return String{nillabletypes.NewString(v)}
 }
 
 // NewStringNilEmpty makes a new string, mapping "" to the nil value
 func NewStringNilEmpty(v string) String {
 	if v == "" {
-		return String{"", false}
+		return NilString()
 	}
-	return String{v, true}
+	return NewString(v)
 }
 
 // NilString makes a nil string
 func NilString() String {
-	return String{"", false}
-}
-
-// String returns the string value.  If v is nil, "" is returned.
-func (v String) String() string {
-	return v.v
-}
-
-// Nil returns whether this scalar is nil
-func (v String) Nil() bool {
-	return !v.present
+	return String{nillabletypes.NilString()}
 }
 
 // ToLiteralValue converts this value to a schema.LiteralValue
 func (v String) ToLiteralValue() (schema.LiteralValue, error) {
-	if !v.present {
+	if v.Nil() {
 		return nil, nil
 	}
-	return schema.LiteralString(v.v), nil
+	return schema.LiteralString(v.String()), nil
 }
 
 // FromLiteralValue populates this value from a schema.LiteralValue
 func (v *String) FromLiteralValue(l schema.LiteralValue) error {
 	if l == nil {
-		*v = String{"", false}
+		*v = NilString()
 		return nil
 	}
 
 	if PermissiveInputParsing {
 		switch c := l.(type) {
 		case schema.LiteralBool:
-			*v = String{fmt.Sprintf("%v", c), true}
+			*v = NewString(fmt.Sprintf("%v", c))
 			PermissiveInputCallback("String", l)
 			return nil
 		case schema.LiteralNumber:
-			*v = String{fmt.Sprintf("%v", c), true}
+			*v = NewString(fmt.Sprintf("%v", c))
 			PermissiveInputCallback("String", l)
 			return nil
 		}
@@ -182,7 +172,7 @@ func (v *String) FromLiteralValue(l schema.LiteralValue) error {
 	switch c := l.(type) {
 	case schema.LiteralString:
 		s := string(c)
-		*v = String{s, true}
+		*v = NewString(s)
 		return nil
 	default:
 		return fmt.Errorf("Literal value %v is not a string", l)
@@ -191,88 +181,40 @@ func (v *String) FromLiteralValue(l schema.LiteralValue) error {
 
 // CollectInto implements schema.CollectableScalar
 func (v String) CollectInto(col schema.ScalarCollector) {
-	if v.present {
-		col.String(v.v)
+	if !v.Nil() {
+		col.String(v.String())
 	}
 }
 
-// UnmarshalJSON implements json.Unmarshaller
-func (v *String) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte{'n', 'u', 'l', 'l'}) {
-		v.present = false
-		return nil
-	}
-	err := json.Unmarshal(data, &v.v)
-	if err != nil {
-		return err
-	}
-	v.present = true
-	return nil
-}
-
-// MarshalJSON implements json.Marshaler
-func (v String) MarshalJSON() ([]byte, error) {
-	if !v.present {
-		return []byte{'n', 'u', 'l', 'l'}, nil
-	}
-	return json.Marshal(v.v)
-}
-
-// Scan implements sql.Scanner
-func (v *String) Scan(src interface{}) error {
-	if src == nil {
-		*v = String{present: false}
-		return nil
-	}
-	switch t := src.(type) {
-	case []byte:
-		*v = String{present: true, v: string(t)}
-		return nil
-	case string:
-		*v = String{present: true, v: t}
-		return nil
-	}
-	return fmt.Errorf("Cannot scan value %v to a string", src)
-}
+type ni = nillabletypes.Int32
 
 // Int represents the GraphQL built in Int type
 type Int struct {
-	v       int32
-	present bool
+	ni
 }
 
 // NewInt makes a new int
 func NewInt(v int32) Int {
-	return Int{v, true}
+	return Int{nillabletypes.NewInt32(v)}
 }
 
 // NilInt makes a nil int
 func NilInt() Int {
-	return Int{0, false}
-}
-
-// Int32 returns the value of this scalar as an int32. If v is nil, 0 is returned.
-func (v Int) Int32() int32 {
-	return v.v
-}
-
-// Nil returns whether this scalar is nil
-func (v Int) Nil() bool {
-	return !v.present
+	return Int{nillabletypes.NilInt32()}
 }
 
 // ToLiteralValue converts this value to a schema.LiteralValue
 func (v Int) ToLiteralValue() (schema.LiteralValue, error) {
-	if !v.present {
+	if v.Nil() {
 		return nil, nil
 	}
-	return schema.LiteralNumber(v.v), nil
+	return schema.LiteralNumber(v.Int32()), nil
 }
 
 // FromLiteralValue populates this value from a schema.LiteralValue
 func (v *Int) FromLiteralValue(l schema.LiteralValue) error {
 	if l == nil {
-		*v = Int{0, false}
+		*v = NilInt()
 		return nil
 	}
 
@@ -283,7 +225,7 @@ func (v *Int) FromLiteralValue(l schema.LiteralValue) error {
 			if err != nil {
 				return err
 			}
-			*v = Int{int32(i), true}
+			*v = NewInt(int32(i))
 			PermissiveInputCallback("Int", l)
 			return nil
 		case schema.LiteralBool:
@@ -291,7 +233,7 @@ func (v *Int) FromLiteralValue(l schema.LiteralValue) error {
 			if c {
 				i = 1
 			}
-			*v = Int{int32(i), true}
+			*v = NewInt(int32(i))
 			PermissiveInputCallback("Int", l)
 			return nil
 		}
@@ -300,7 +242,7 @@ func (v *Int) FromLiteralValue(l schema.LiteralValue) error {
 	case schema.LiteralNumber:
 		if c <= math.MaxInt32 && c >= math.MinInt32 && float64(c) == math.Trunc(float64(c)) {
 			i := int32(c)
-			*v = Int{i, true}
+			*v = NewInt(i)
 			return nil
 		}
 		return fmt.Errorf("Cannot convert float to int (would truncate)")
@@ -311,100 +253,45 @@ func (v *Int) FromLiteralValue(l schema.LiteralValue) error {
 
 // CollectInto implements schema.CollectableScalar
 func (v Int) CollectInto(col schema.ScalarCollector) {
-	if v.present {
-		col.Int(int64(v.v))
+	if !v.Nil() {
+		col.Int(int64(v.Int32()))
 	}
 }
 
-// UnmarshalJSON implements json.Unmarshaller
-func (v *Int) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte{'n', 'u', 'l', 'l'}) {
-		v.present = false
-		return nil
-	}
-	var t float64
-	err := json.Unmarshal(data, &t)
-	if err != nil {
-		return err
-	}
-
-	if math.Trunc(t) != float64(int32(t)) {
-		return fmt.Errorf("Value %v outside of the range of this type", t)
-	}
-	v.v = int32(t)
-	v.present = true
-	return nil
-}
-
-// MarshalJSON implements json.Marshaler
-func (v Int) MarshalJSON() ([]byte, error) {
-	if !v.present {
-		return []byte{'n', 'u', 'l', 'l'}, nil
-	}
-	return json.Marshal(v.v)
-}
-
-// Scan implements sql.Scanner
-func (v *Int) Scan(src interface{}) error {
-	if src == nil {
-		*v = Int{present: false}
-		return nil
-	}
-	switch t := src.(type) {
-	case int64:
-		*v = Int{present: true, v: int32(t)}
-		return nil
-	case float64:
-		*v = Int{present: true, v: int32(t)}
-		return nil
-	case bool:
-		if t {
-			*v = Int{present: true, v: 1}
-		} else {
-			*v = Int{present: true, v: 0}
-		}
-	}
-	return fmt.Errorf("Cannot scan value %v to an int", src)
-}
+type nf = nillabletypes.Float
 
 // Float represents the GraphQL built in Float type
 type Float struct {
-	v       float64
-	present bool
+	nf
 }
 
 // NewFloat makes a new float
 func NewFloat(v float64) Float {
-	return Float{v, true}
+	return Float{nillabletypes.NewFloat(v)}
 }
 
 // NilFloat makes a nil float
 func NilFloat() Float {
-	return Float{0, false}
+	return Float{nillabletypes.NilFloat()}
 }
 
 // Float64 returns the value of this scalar as a float64. If v is nil, 0 is returned.
 func (v Float) Float64() float64 {
-	return v.v
-}
-
-// Nil returns whether this scalar is nil
-func (v Float) Nil() bool {
-	return !v.present
+	return v.Float()
 }
 
 // ToLiteralValue converts this value to a schema.LiteralValue
 func (v Float) ToLiteralValue() (schema.LiteralValue, error) {
-	if !v.present {
+	if v.Nil() {
 		return nil, nil
 	}
-	return schema.LiteralNumber(v.v), nil
+	return schema.LiteralNumber(v.Float()), nil
 }
 
 // FromLiteralValue populates this value from a schema.LiteralValue
 func (v *Float) FromLiteralValue(l schema.LiteralValue) error {
 	if l == nil {
-		*v = Float{0, false}
+		*v = NilFloat()
 		return nil
 	}
 
@@ -415,7 +302,7 @@ func (v *Float) FromLiteralValue(l schema.LiteralValue) error {
 			if err != nil {
 				return err
 			}
-			*v = Float{f, true}
+			*v = NewFloat(f)
 			PermissiveInputCallback("Float", l)
 			return nil
 		case schema.LiteralBool:
@@ -423,7 +310,7 @@ func (v *Float) FromLiteralValue(l schema.LiteralValue) error {
 			if c {
 				f = 1
 			}
-			*v = Float{f, true}
+			*v = NewFloat(f)
 			PermissiveInputCallback("Float", l)
 			return nil
 		}
@@ -432,7 +319,7 @@ func (v *Float) FromLiteralValue(l schema.LiteralValue) error {
 	switch c := l.(type) {
 	case schema.LiteralNumber:
 		f := float64(c)
-		*v = Float{f, true}
+		*v = NewFloat(f)
 		return nil
 	default:
 		return fmt.Errorf("Literal value %v is not a float", l)
@@ -441,103 +328,40 @@ func (v *Float) FromLiteralValue(l schema.LiteralValue) error {
 
 // CollectInto implements schema.CollectableScalar
 func (v Float) CollectInto(col schema.ScalarCollector) {
-	if v.present {
-		col.Float(v.v)
+	if !v.Nil() {
+		col.Float(v.Float())
 	}
 }
 
-// UnmarshalJSON implements json.Unmarshaller
-func (v *Float) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte{'n', 'u', 'l', 'l'}) {
-		v.present = false
-		return nil
-	}
-	err := json.Unmarshal(data, &v.v)
-	if err != nil {
-		return err
-	}
-	v.present = true
-	return nil
-}
-
-// MarshalJSON implements json.Marshaler
-func (v Float) MarshalJSON() ([]byte, error) {
-	if !v.present {
-		return []byte{'n', 'u', 'l', 'l'}, nil
-	}
-	return json.Marshal(v.v)
-}
-
-// Scan implements sql.Scanner
-func (v *Float) Scan(src interface{}) error {
-	if src == nil {
-		*v = Float{present: false}
-		return nil
-	}
-	switch t := src.(type) {
-	case float64:
-		*v = Float{present: true, v: t}
-		return nil
-	case int64:
-		*v = Float{present: true, v: float64(t)}
-	case bool:
-		if t {
-			*v = Float{present: true, v: 1}
-		} else {
-			*v = Float{present: true, v: 0}
-		}
-		return nil
-	case []uint8:
-		s := string(t)
-		f, err := strconv.ParseFloat(s, 64)
-		if err != nil {
-			return fmt.Errorf("cannot scan value []uint8 (%v) to a float", src)
-		}
-
-		*v = Float{v: f, present: true}
-		return nil
-	}
-	return fmt.Errorf("Cannot scan value %v to a float", src)
-}
+type nb = nillabletypes.Bool
 
 // Boolean represents the GraphQL built in Boolean type
 type Boolean struct {
-	v       bool
-	present bool
+	nb
 }
 
 // NewBoolean makes a new bool
 func NewBoolean(v bool) Boolean {
-	return Boolean{v, true}
+	return Boolean{nillabletypes.NewBool(v)}
 }
 
 // NilBoolean makes a nil bool
 func NilBoolean() Boolean {
-	return Boolean{false, false}
-}
-
-// Bool returns the value of this scalar as a bool. If v is nil, false is returned.
-func (v Boolean) Bool() bool {
-	return v.v
-}
-
-// Nil returns whether this scalar is nil
-func (v Boolean) Nil() bool {
-	return !v.present
+	return Boolean{nillabletypes.NilBool()}
 }
 
 // ToLiteralValue converts this value to a schema.LiteralValue
 func (v Boolean) ToLiteralValue() (schema.LiteralValue, error) {
-	if !v.present {
+	if v.Nil() {
 		return nil, nil
 	}
-	return schema.LiteralBool(v.v), nil
+	return schema.LiteralBool(v.Bool()), nil
 }
 
 // FromLiteralValue populates this value from a schema.LiteralValue
 func (v *Boolean) FromLiteralValue(l schema.LiteralValue) error {
 	if l == nil {
-		*v = Boolean{false, false}
+		*v = NilBoolean()
 		return nil
 	}
 
@@ -546,19 +370,19 @@ func (v *Boolean) FromLiteralValue(l schema.LiteralValue) error {
 		case schema.LiteralString:
 			s := string(c)
 			if s == "true" {
-				*v = Boolean{true, true}
+				*v = NewBoolean(true)
 				PermissiveInputCallback("Boolean", l)
 				return nil
 			} else if s == "false" {
-				*v = Boolean{false, true}
+				*v = NewBoolean(false)
 				PermissiveInputCallback("Boolean", l)
 				return nil
 			}
 		case schema.LiteralNumber:
 			if c == 0 {
-				*v = Boolean{false, true}
+				*v = NewBoolean(false)
 			} else {
-				*v = Boolean{true, true}
+				*v = NewBoolean(true)
 			}
 			PermissiveInputCallback("Boolean", l)
 			return nil
@@ -568,7 +392,7 @@ func (v *Boolean) FromLiteralValue(l schema.LiteralValue) error {
 	switch c := l.(type) {
 	case schema.LiteralBool:
 		b := bool(c)
-		*v = Boolean{b, true}
+		*v = NewBoolean(b)
 		return nil
 	default:
 		return fmt.Errorf("Literal value %v is not a bool", l)
@@ -577,59 +401,9 @@ func (v *Boolean) FromLiteralValue(l schema.LiteralValue) error {
 
 // CollectInto implements schema.CollectableScalar
 func (v Boolean) CollectInto(col schema.ScalarCollector) {
-	if v.present {
-		col.Bool(v.v)
+	if !v.Nil() {
+		col.Bool(v.Bool())
 	}
-}
-
-// UnmarshalJSON implements json.Unmarshaller
-func (v *Boolean) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte{'n', 'u', 'l', 'l'}) {
-		v.present = false
-		return nil
-	}
-	err := json.Unmarshal(data, &v.v)
-	if err != nil {
-		return err
-	}
-	v.present = true
-	return nil
-}
-
-// MarshalJSON implements json.Marshaler
-func (v Boolean) MarshalJSON() ([]byte, error) {
-	if !v.present {
-		return []byte{'n', 'u', 'l', 'l'}, nil
-	}
-	return json.Marshal(v.v)
-}
-
-// Scan implements sql.Scanner
-func (v *Boolean) Scan(src interface{}) error {
-	if src == nil {
-		*v = Boolean{present: false}
-		return nil
-	}
-	switch t := src.(type) {
-	case bool:
-		*v = Boolean{present: true, v: t}
-		return nil
-	case int64:
-		if t == 0 {
-			*v = Boolean{present: true, v: false}
-		} else {
-			*v = Boolean{present: true, v: true}
-		}
-		return nil
-	case float64:
-		if t == 0 {
-			*v = Boolean{present: true, v: false}
-		} else {
-			*v = Boolean{present: true, v: true}
-		}
-		return nil
-	}
-	return fmt.Errorf("Cannot scan value %v to a bool", src)
 }
 
 func init() {
@@ -654,9 +428,9 @@ func init() {
 		switch v {
 		case jsoniter.NilValue:
 			iter.ReadNil()
-			*((*String)(ptr)) = String{present: false}
+			*((*String)(ptr)) = NilString()
 		case jsoniter.StringValue:
-			*((*String)(ptr)) = String{v: iter.ReadString(), present: true}
+			*((*String)(ptr)) = NewString(iter.ReadString())
 		default:
 			skipped := iter.SkipAndReturnBytes()
 			iter.Error = fmt.Errorf("Value is not a string (type: %v, data: %v)", v, skipped)
@@ -668,14 +442,14 @@ func init() {
 		switch v {
 		case jsoniter.NilValue:
 			iter.ReadNil()
-			*((*Int)(ptr)) = Int{present: false}
+			*((*Int)(ptr)) = NilInt()
 		case jsoniter.NumberValue:
 			t := iter.ReadFloat64()
 
 			if math.Trunc(t) != float64(int32(t)) {
 				iter.Error = fmt.Errorf("Value %v outside of the range of this type", t)
 			}
-			*((*Int)(ptr)) = Int{v: int32(t), present: true}
+			*((*Int)(ptr)) = NewInt(int32(t))
 		default:
 			skipped := iter.SkipAndReturnBytes()
 			iter.Error = fmt.Errorf("Value is not a number (type: %v, data: %v)", v, skipped)
@@ -687,10 +461,10 @@ func init() {
 		switch v {
 		case jsoniter.NilValue:
 			iter.ReadNil()
-			*((*Float)(ptr)) = Float{present: false}
+			*((*Float)(ptr)) = NilFloat()
 		case jsoniter.NumberValue:
 			t := iter.ReadFloat64()
-			*((*Float)(ptr)) = Float{v: t, present: true}
+			*((*Float)(ptr)) = NewFloat(t)
 		default:
 			skipped := iter.SkipAndReturnBytes()
 			iter.Error = fmt.Errorf("Value is not a number (type: %v, data: %v)", v, skipped)
@@ -702,12 +476,12 @@ func init() {
 		switch v {
 		case jsoniter.NilValue:
 			iter.ReadNil()
-			*((*Boolean)(ptr)) = Boolean{present: false}
+			*((*Boolean)(ptr)) = NilBoolean()
 		case jsoniter.BoolValue:
-			*((*Boolean)(ptr)) = Boolean{v: iter.ReadBool(), present: true}
+			*((*Boolean)(ptr)) = NewBoolean(iter.ReadBool())
 		case jsoniter.NumberValue:
 			t := iter.ReadInt8()
-			*((*Boolean)(ptr)) = Boolean{v: !(t == 0), present: true}
+			*((*Boolean)(ptr)) = NewBoolean(!(t == 0))
 		default:
 			skipped := iter.SkipAndReturnBytes()
 			iter.Error = fmt.Errorf("Value is not a bool (type: %v, data: %v)", v, skipped)
