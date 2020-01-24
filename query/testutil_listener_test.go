@@ -60,11 +60,11 @@ func (baseExecutionListenerAssertion) NotifyResolve(l *assertExecutionListener, 
 }
 
 func (baseExecutionListenerAssertion) NotifyIdle(l *assertExecutionListener) {
-	panic(fmt.Errorf("Unexepected call to NotifyIdle"))
+	panic(fmt.Errorf("Unexpected call to NotifyIdle"))
 }
 
 func (baseExecutionListenerAssertion) NotifyError(l *assertExecutionListener, err error) {
-	panic(fmt.Errorf("Unexepected call to NotifyError: %v", err))
+	panic(fmt.Errorf("Unexpected call to NotifyError: %v", err))
 }
 
 type resolveAssertion struct {

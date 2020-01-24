@@ -15,7 +15,7 @@
 // Package schema is used to describe a GraphQL schema
 //
 // A schema is essentially a registry of types.  A type provides
-// metadta for GraphQL clients via introspections, as well as providing
+// metadata for GraphQL clients via introspections, as well as providing
 // type specific methods to allow the query package to operate over instances
 // of the type.
 //

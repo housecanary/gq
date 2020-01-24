@@ -63,7 +63,7 @@ var postFieldToColumn = map[string]string{
 	"authorId": "author_id",
 	"author":   "author_id",
 	"title":    "title",
-	"bpdy":     "body",
+	"body":     "body",
 }
 
 type LikesFetchResult struct {

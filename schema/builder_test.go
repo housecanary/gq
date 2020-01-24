@@ -39,14 +39,14 @@ func ExampleBuilder_object() {
 	ot.SetDescription("Foo is the root query type")
 	ot.AddDirective("exampleDirective").AddArgument("options", ast.ArrayValue{V: []ast.Value{ast.StringValue{V: "Test"}}})
 
-	// Add a field to the object with a resolver that accessess data from the container
+	// Add a field to the object with a resolver that accesses data from the container
 	fd := ot.AddField("bar", &ast.SimpleType{Name: "String"}, schema.SimpleResolver(func(container interface{}) (interface{}, error) {
 		return container.(*Foo).barField, nil
 	}))
 	fd.AddDirective("exampleDirective").AddArgument("options", ast.ArrayValue{V: []ast.Value{ast.StringValue{V: "Test2"}}})
 	fd.SetDescription("bar contains ... data")
 
-	// Add a field to the object with a resolver that accessess arguments
+	// Add a field to the object with a resolver that accesses arguments
 	fd = ot.AddField("hello", &ast.SimpleType{Name: "String"}, schema.FullResolver(func(ctx schema.ResolverContext, container interface{}) (interface{}, error) {
 		v, err := ctx.GetArgumentValue("name")
 		if err != nil {

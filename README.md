@@ -41,7 +41,7 @@ GQ takes a hybrid approach to schema definition. Although you can build a schema
 
 A common use case for GraphQL servers is loading data from other systems (databases or internal services) and exposing this in a schema that clients can easily use. Major performance gains can be had by batching together related queries to reduce the overhead of each query.
 
-Existing libraries all make it difficult to optimally batch queries: there is no hook to indicate good batch points, so the libraries rely on timeouts (i.e. every 10 msec batch up all pending queries and run them). This leads to unecessary latency (i.e. if batch timeout = 20ms and the query has a depth of 5 up to 100ms of time is wasted) or suboptimal batching (i.e. setting a lower timeout, which then may not include all queries).
+Existing libraries all make it difficult to optimally batch queries: there is no hook to indicate good batch points, so the libraries rely on timeouts (i.e. every 10 msec batch up all pending queries and run them). This leads to unnecessary latency (i.e. if batch timeout = 20ms and the query has a depth of 5 up to 100ms of time is wasted) or suboptimal batching (i.e. setting a lower timeout, which then may not include all queries).
 
 Event loop based systems like the Node and Python implementations solve this relatively easily:  they simply schedule batches on the next event loop tick. The net result of this is that batches are issued ASAP once all synchronous resolvers are executed.
 

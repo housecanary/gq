@@ -274,11 +274,11 @@ func (c *genCtx) unpackResultType(results *types.Tuple) (resultType ast.Type, er
 		switch t := r.(type) {
 		case *types.Chan:
 			if !c.isError(t.Elem()) {
-				return nil, fmt.Errorf("Second resturn value must be error or chan error")
+				return nil, fmt.Errorf("Second return value must be error or chan error")
 			}
 		default:
 			if !c.isError(r) {
-				return nil, fmt.Errorf("Second resturn value must be error or chan error")
+				return nil, fmt.Errorf("Second return value must be error or chan error")
 			}
 		}
 	}
