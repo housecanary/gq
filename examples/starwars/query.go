@@ -15,6 +15,9 @@ type Query struct {
 		"A human by their unique ID or name"
 		human(lookup: LookupInput!) : Human
 
+		"Humans by their unique ID or name"
+		humans(lookups: [LookupInput!]) : [Human]
+
 		"A droid by their unique ID or name"
 		droid(lookup: LookupInput!) : Droid
 
@@ -45,6 +48,18 @@ func (*Query) ResolveHuman(lookup *lookupInput) (*human, error) {
 	}
 
 	return nil, fmt.Errorf("Must supply either id or name to lookup")
+}
+
+func (q *Query) ResolveHumans(lookups []*lookupInput) ([]*human, error) {
+	var result []*human
+	for _, li := range lookups {
+		h, err := q.ResolveHuman(li)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, h)
+	}
+	return result, nil
 }
 
 func (*Query) ResolveDroid(lookup *lookupInput) (*droid, error) {
