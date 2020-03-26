@@ -177,6 +177,10 @@ func (c *genCtx) isInjectedArg(v *types.Var) bool {
 		return true
 	}
 
+	if at, ok := typ.(*types.Slice); ok {
+		typ = at.Elem()
+	}
+
 	if pt, ok := typ.(*types.Pointer); ok {
 		typ = pt.Elem()
 	}

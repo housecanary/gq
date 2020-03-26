@@ -358,7 +358,7 @@ func (c *outputCtx) addInputObjectTypeRegistration(body *j.Group, meta *inputObj
 		g.Return(j.Id("val"), j.Nil())
 	})
 
-	inputListCreator := j.Id(c.inputListCreatorFor(meta.Name(), meta.NamedType())).Values()
+	inputListCreator := j.Id(c.inputListCreatorFor(meta.Name(), types.NewPointer(meta.NamedType()))).Values()
 
 	body.BlockFunc(func(reg *j.Group) {
 		reg.Id("iob").Op(":=").Id("sb").Dot("AddInputObjectType").Call(j.Lit(meta.Name()), decode, inputListCreator)
@@ -746,7 +746,11 @@ func (c *outputCtx) addListWrapperType(typ types.Type, name string, g *j.Group) 
 
 	g.Func().Params(j.Id("w").Id(name)).Id("ForEachElement").Params(j.Id("cb").Qual("github.com/housecanary/gq/schema", "ListValueCallback")).BlockFunc(func(g *j.Group) {
 		g.For(j.List(j.Id("_"), j.Id("e")).Op(":=").Range().Id("w")).BlockFunc(func(g *j.Group) {
-			g.Id("cb").Call(j.Id("e"))
+			g.If(j.Id("e").Op("==").Nil()).Block(
+				j.Id("cb").Call(j.Nil()),
+			).Else().Block(
+				j.Id("cb").Call(j.Id("e")),
+			)
 		})
 	})
 }
