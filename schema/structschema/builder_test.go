@@ -36,6 +36,9 @@ type Root struct {
 		"Says hello politely"
 		politeHello(title: TitleInput!): String
 
+		"Says hello politely to multiple people"
+		politeHellos(titles: [TitleInput!]): [String!]
+
 		"Returns a canned greeting"
 		cannedHello(type: CannedHelloType = BRIEF): String
 
@@ -77,6 +80,14 @@ func (r *Root) ResolvePoliteHello(title *TitleInput) types.String {
 	}
 
 	return types.NewString(greeting)
+}
+
+func (r *Root) ResolvePoliteHellos(titles []*TitleInput) []types.String {
+	var result []types.String
+	for _, ti := range titles {
+		result = append(result, r.ResolvePoliteHello(ti))
+	}
+	return result
 }
 
 func (r *Root) ResolveCannedHello(typ CannedHelloType) (types.String, error) {
@@ -288,6 +299,13 @@ func Example() {
 			title: "Mr"
 			lastName: "Random"
 		})
+		politeHellos(titles: [{
+			title: "Mr"
+			lastName: "Random"
+		}, {
+			title: "Mrs"
+			lastName: "Random"
+		}])
 		politeHelloLong: politeHello(title: {
 			title: "Professor"
 			additionalTitles: [["Doctor"]]
@@ -395,6 +413,11 @@ func Example() {
 	//       title: TitleInput!
 	//     ): String
 	//
+	//     "Says hello politely to multiple people"
+	//     politeHellos (
+	//       titles: [TitleInput!]
+	//     ): [String!]
+	//
 	//     "A random number. Selected by a fair roll of a die."
 	//     randomNumber: Int
 	//   }
@@ -424,6 +447,10 @@ func Example() {
 	//     "randomNumber": 7,
 	//     "hello": "Hello Bob",
 	//     "politeHello": "Hello Mr Random",
+	//     "politeHellos": [
+	//       "Hello Mr Random",
+	//       "Hello Mrs Random"
+	//     ],
 	//     "politeHelloLong": "Hello Professor Doctor Random",
 	//     "politeHelloError": null,
 	//     "cannedHello": "Hi!",
@@ -449,7 +476,7 @@ func Example() {
 	//       ],
 	//       "locations": [
 	//         {
-	//           "line": 14,
+	//           "line": 21,
 	//           "column": 3
 	//         }
 	//       ]
@@ -461,7 +488,7 @@ func Example() {
 	//       ],
 	//       "locations": [
 	//         {
-	//           "line": 19,
+	//           "line": 26,
 	//           "column": 3
 	//         }
 	//       ]
@@ -474,7 +501,7 @@ func Example() {
 	//       ],
 	//       "locations": [
 	//         {
-	//           "line": 28,
+	//           "line": 35,
 	//           "column": 5
 	//         }
 	//       ]

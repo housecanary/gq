@@ -549,7 +549,7 @@ func (b *Builder) schemaBuilder() (*schema.Builder, error) {
 		case typeKindUnion:
 			unionTypes = append(unionTypes, v)
 		case typeKindInputObject:
-			iob := schemaBuilder.AddInputObjectType(v.Name, makeDecodeInputObject(v), reflectionInputListCreator{v.ReflectType})
+			iob := schemaBuilder.AddInputObjectType(v.Name, makeDecodeInputObject(v), reflectionInputListCreator{reflect.PtrTo(v.ReflectType)})
 			iot := v.GqlType.(*ast.InputObjectTypeDefinition)
 			setSchemaElementProps(iob, iot.Description, iot.Directives)
 			for _, f := range v.InputFields {
