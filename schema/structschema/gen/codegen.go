@@ -746,11 +746,15 @@ func (c *outputCtx) addListWrapperType(typ types.Type, name string, g *j.Group) 
 
 	g.Func().Params(j.Id("w").Id(name)).Id("ForEachElement").Params(j.Id("cb").Qual("github.com/housecanary/gq/schema", "ListValueCallback")).BlockFunc(func(g *j.Group) {
 		g.For(j.List(j.Id("_"), j.Id("e")).Op(":=").Range().Id("w")).BlockFunc(func(g *j.Group) {
-			g.If(j.Id("e").Op("==").Nil()).Block(
-				j.Id("cb").Call(j.Nil()),
-			).Else().Block(
-				j.Id("cb").Call(j.Id("e")),
-			)
+			if _, ok := typ.(*types.Pointer); ok {
+				g.If(j.Id("e").Op("==").Nil()).Block(
+					j.Id("cb").Call(j.Nil()),
+				).Else().Block(
+					j.Id("cb").Call(j.Id("e")),
+				)
+			} else {
+				g.Id("cb").Call(j.Id("e"))
+			}
 		})
 	})
 }
