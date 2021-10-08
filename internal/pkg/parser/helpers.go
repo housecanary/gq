@@ -15,17 +15,36 @@
 package parser
 
 import (
+	"sync"
+
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 
 	"github.com/housecanary/gq/internal/pkg/parser/gen"
 )
 
+var lexerPool = sync.Pool{
+	New: func() interface{} {
+		return gen.NewGraphqlLexer(nil)
+	},
+}
+
+var parserPool = sync.Pool{
+	New: func() interface{} {
+		return gen.NewGraphqlParser(nil)
+	},
+}
+
 func safeParse(input string, cb func(*gen.GraphqlParser)) (err ParseError) {
 	err = nil
 	is := antlr.NewInputStream(input)
-	lexer := gen.NewGraphqlLexer(is)
+	lexer := lexerPool.Get().(*gen.GraphqlLexer)
+	defer lexerPool.Put(lexer)
+	lexer.SetInputStream(is)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := gen.NewGraphqlParser(stream)
+	p := parserPool.Get().(*gen.GraphqlParser)
+	defer parserPool.Put(p)
+	p.SetInputStream(stream)
+
 	p.RemoveErrorListeners()
 	p.AddErrorListener(panicListener{})
 	defer func() {
