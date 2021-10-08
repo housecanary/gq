@@ -204,11 +204,19 @@ func (h *GraphQLHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 						h.writeError(http.StatusBadRequest, fmt.Sprintf("Bad request: %v", itr.Error), w)
 						return
 					}
-					h.executeSingle(w, req, &msg)
+
+					if len(msg.Extensions.VariablesList) > 0 {
+						if len(msg.Variables) != 0 {
+							h.writeError(http.StatusBadRequest, "Bad request: cannot use variables and variablesList extension together", w)
+							return
+						}
+						h.executeBatch(w, req, msg.splitVariablesList())
+					} else {
+						h.executeSingle(w, req, &msg)
+					}
 				} else {
 					h.writeError(http.StatusBadRequest, "Unparsable response body: must be an object or array", w)
 				}
-
 			case "application/graphql":
 				msg := graphQLRequest{
 					Query: string(data),
@@ -360,6 +368,26 @@ type graphQLRequest struct {
 	Query         string          `json:"query"`
 	Variables     json.RawMessage `json:"variables"`
 	OperationName string          `json:"operationName"`
+	Extensions    struct {
+		VariablesList []json.RawMessage `json:"variablesList"`
+	}
+}
+
+type graphQLBatchRequest struct {
+	Query         string `json:"query"`
+	OperationName string `json:"operationName"`
+}
+
+func (r *graphQLRequest) splitVariablesList() []*graphQLRequest {
+	result := make([]*graphQLRequest, len(r.Extensions.VariablesList))
+	for i, v := range r.Extensions.VariablesList {
+		result[i] = &graphQLRequest{
+			Query:         r.Query,
+			Variables:     v,
+			OperationName: r.OperationName,
+		}
+	}
+	return result
 }
 
 var startArray = []byte("[")
