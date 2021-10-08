@@ -1,4 +1,4 @@
-// Code generated from /Users/mpoindexter/dev/gq/grammar/Graphql.g4 by ANTLR 4.7.1. DO NOT EDIT.
+// Code generated from grammar/Graphql.g4 by ANTLR 4.9.2. DO NOT EDIT.
 
 package gen // Graphql
 import "github.com/antlr/antlr4/runtime/Go/antlr"

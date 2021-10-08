@@ -1,4 +1,4 @@
-// Code generated from /Users/mpoindexter/dev/gq/grammar/Graphql.g4 by ANTLR 4.7.1. DO NOT EDIT.
+// Code generated from grammar/Graphql.g4 by ANTLR 4.9.2. DO NOT EDIT.
 
 package gen // Graphql
 import (
@@ -442,9 +442,6 @@ var parserATN = []uint16{
 	798, 803, 807, 812, 815, 818, 821, 826, 831, 835, 840, 843, 846, 849, 854,
 	857, 860, 864, 867, 870, 873, 876, 878, 881, 884, 887,
 }
-var deserializer = antlr.NewATNDeserializer(nil)
-var deserializedATN = deserializer.DeserializeFromUInt16(parserATN)
-
 var literalNames = []string{
 	"", "'['", "']'", "'{'", "'}'", "':'", "'@'", "'('", "')'", "'$'", "'='",
 	"'!'", "'...'", "'on'", "'&'", "'|'", "", "'null'", "'fragment'", "'query'",
@@ -482,21 +479,25 @@ var ruleNames = []string{
 	"partialEnumTypeDefinition", "partialInterfaceTypeDefinition", "partialUnionTypeDefinition",
 	"partialScalarTypeDefinition",
 }
-var decisionToDFA = make([]*antlr.DFA, len(deserializedATN.DecisionToState))
-
-func init() {
-	for index, ds := range deserializedATN.DecisionToState {
-		decisionToDFA[index] = antlr.NewDFA(ds, index)
-	}
-}
 
 type GraphqlParser struct {
 	*antlr.BaseParser
 }
 
+// NewGraphqlParser produces a new parser instance for the optional input antlr.TokenStream.
+//
+// The *GraphqlParser instance produced may be reused by calling the SetInputStream method.
+// The initial parser configuration is expensive to construct, and the object is not thread-safe;
+// however, if used within a Golang sync.Pool, the construction cost amortizes well and the
+// objects can be used in a thread-safe manner.
 func NewGraphqlParser(input antlr.TokenStream) *GraphqlParser {
 	this := new(GraphqlParser)
-
+	deserializer := antlr.NewATNDeserializer(nil)
+	deserializedATN := deserializer.DeserializeFromUInt16(parserATN)
+	decisionToDFA := make([]*antlr.DFA, len(deserializedATN.DecisionToState))
+	for index, ds := range deserializedATN.DecisionToState {
+		decisionToDFA[index] = antlr.NewDFA(ds, index)
+	}
 	this.BaseParser = antlr.NewBaseParser(input)
 
 	this.Interpreter = antlr.NewParserATNSimulator(this, deserializedATN, decisionToDFA, antlr.NewPredictionContextCache())
@@ -5040,6 +5041,10 @@ func NewFragmentDefinitionContext(parser antlr.Parser, parent antlr.ParserRuleCo
 }
 
 func (s *FragmentDefinitionContext) GetParser() antlr.Parser { return s.parser }
+
+func (s *FragmentDefinitionContext) FRAGMENT() antlr.TerminalNode {
+	return s.GetToken(GraphqlParserFRAGMENT, 0)
+}
 
 func (s *FragmentDefinitionContext) FragmentName() IFragmentNameContext {
 	var t = s.GetTypedRuleContext(reflect.TypeOf((*IFragmentNameContext)(nil)).Elem(), 0)

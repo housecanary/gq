@@ -1,4 +1,4 @@
-// Code generated from /Users/mpoindexter/dev/gq/grammar/Graphql.g4 by ANTLR 4.7.1. DO NOT EDIT.
+// Code generated from grammar/Graphql.g4 by ANTLR 4.9.2. DO NOT EDIT.
 
 package gen // Graphql
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -479,7 +479,8 @@ func (s *BaseGraphqlListener) EnterPartialUnionTypeDefinition(ctx *PartialUnionT
 }
 
 // ExitPartialUnionTypeDefinition is called when production partialUnionTypeDefinition is exited.
-func (s *BaseGraphqlListener) ExitPartialUnionTypeDefinition(ctx *PartialUnionTypeDefinitionContext) {}
+func (s *BaseGraphqlListener) ExitPartialUnionTypeDefinition(ctx *PartialUnionTypeDefinitionContext) {
+}
 
 // EnterPartialScalarTypeDefinition is called when production partialScalarTypeDefinition is entered.
 func (s *BaseGraphqlListener) EnterPartialScalarTypeDefinition(ctx *PartialScalarTypeDefinitionContext) {
