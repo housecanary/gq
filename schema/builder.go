@@ -326,7 +326,7 @@ func (b *Builder) Build(queryTypeName string) (*Schema, error) {
 			named: named{"__type"},
 			typ:   introspectionTypeType,
 			arguments: []*ArgumentDescriptor{
-				&ArgumentDescriptor{
+				{
 					named: named{"name"},
 					typ:   &NotNilType{introspectionStringType},
 				},

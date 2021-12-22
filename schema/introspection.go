@@ -54,14 +54,14 @@ type iTypeKind string
 var introspectionTypeKindType = &EnumType{
 	named: named{"__TypeKind"},
 	values: map[LiteralString]*enumValueDescriptor{
-		"SCALAR":       &enumValueDescriptor{named: named{"SCALAR"}},
-		"OBJECT":       &enumValueDescriptor{named: named{"OBJECT"}},
-		"INTERFACE":    &enumValueDescriptor{named: named{"INTERFACE"}},
-		"UNION":        &enumValueDescriptor{named: named{"UNION"}},
-		"ENUM":         &enumValueDescriptor{named: named{"ENUM"}},
-		"INPUT_OBJECT": &enumValueDescriptor{named: named{"INPUT_OBJECT"}},
-		"LIST":         &enumValueDescriptor{named: named{"LIST"}},
-		"NON_NULL":     &enumValueDescriptor{named: named{"NON_NULL"}},
+		"SCALAR":       {named: named{"SCALAR"}},
+		"OBJECT":       {named: named{"OBJECT"}},
+		"INTERFACE":    {named: named{"INTERFACE"}},
+		"UNION":        {named: named{"UNION"}},
+		"ENUM":         {named: named{"ENUM"}},
+		"INPUT_OBJECT": {named: named{"INPUT_OBJECT"}},
+		"LIST":         {named: named{"LIST"}},
+		"NON_NULL":     {named: named{"NON_NULL"}},
 	},
 	encode: func(ctx context.Context, v interface{}) (LiteralValue, error) {
 		if v == nil {
@@ -83,24 +83,24 @@ var introspectionTypeKindType = &EnumType{
 var introspectionDirectiveLocationType = &EnumType{
 	named: named{"__DirectiveLocation"},
 	values: map[LiteralString]*enumValueDescriptor{
-		"QUERY":                  &enumValueDescriptor{named: named{"QUERY"}},
-		"MUTATION":               &enumValueDescriptor{named: named{"MUTATION"}},
-		"SUBSCRIPTION":           &enumValueDescriptor{named: named{"SUBSCRIPTION"}},
-		"FIELD":                  &enumValueDescriptor{named: named{"FIELD"}},
-		"FRAGMENT_DEFINITION":    &enumValueDescriptor{named: named{"FRAGMENT_DEFINITION"}},
-		"FRAGMENT_SPREAD":        &enumValueDescriptor{named: named{"FRAGMENT_SPREAD"}},
-		"INLINE_FRAGMENT":        &enumValueDescriptor{named: named{"INLINE_FRAGMENT"}},
-		"SCHEMA":                 &enumValueDescriptor{named: named{"SCHEMA"}},
-		"SCALAR":                 &enumValueDescriptor{named: named{"SCALAR"}},
-		"OBJECT":                 &enumValueDescriptor{named: named{"OBJECT"}},
-		"FIELD_DEFINITION":       &enumValueDescriptor{named: named{"FIELD_DEFINITION"}},
-		"ARGUMENT_DEFINITION":    &enumValueDescriptor{named: named{"ARGUMENT_DEFINITION"}},
-		"INTERFACE":              &enumValueDescriptor{named: named{"INTERFACE"}},
-		"UNION":                  &enumValueDescriptor{named: named{"UNION"}},
-		"ENUM":                   &enumValueDescriptor{named: named{"ENUM"}},
-		"ENUM_VALUE":             &enumValueDescriptor{named: named{"ENUM_VALUE"}},
-		"INPUT_OBJECT":           &enumValueDescriptor{named: named{"INPUT_OBJECT"}},
-		"INPUT_FIELD_DEFINITION": &enumValueDescriptor{named: named{"INPUT_FIELD_DEFINITION"}},
+		"QUERY":                  {named: named{"QUERY"}},
+		"MUTATION":               {named: named{"MUTATION"}},
+		"SUBSCRIPTION":           {named: named{"SUBSCRIPTION"}},
+		"FIELD":                  {named: named{"FIELD"}},
+		"FRAGMENT_DEFINITION":    {named: named{"FRAGMENT_DEFINITION"}},
+		"FRAGMENT_SPREAD":        {named: named{"FRAGMENT_SPREAD"}},
+		"INLINE_FRAGMENT":        {named: named{"INLINE_FRAGMENT"}},
+		"SCHEMA":                 {named: named{"SCHEMA"}},
+		"SCALAR":                 {named: named{"SCALAR"}},
+		"OBJECT":                 {named: named{"OBJECT"}},
+		"FIELD_DEFINITION":       {named: named{"FIELD_DEFINITION"}},
+		"ARGUMENT_DEFINITION":    {named: named{"ARGUMENT_DEFINITION"}},
+		"INTERFACE":              {named: named{"INTERFACE"}},
+		"UNION":                  {named: named{"UNION"}},
+		"ENUM":                   {named: named{"ENUM"}},
+		"ENUM_VALUE":             {named: named{"ENUM_VALUE"}},
+		"INPUT_OBJECT":           {named: named{"INPUT_OBJECT"}},
+		"INPUT_FIELD_DEFINITION": {named: named{"INPUT_FIELD_DEFINITION"}},
 	},
 	encode: func(ctx context.Context, v interface{}) (LiteralValue, error) {
 		if v == nil {
@@ -122,7 +122,7 @@ var introspectionDirectiveLocationType = &EnumType{
 var introspectionSchemaType = &ObjectType{
 	named: named{"__Schema"},
 	fieldsByName: map[string]*FieldDescriptor{
-		"types": &FieldDescriptor{
+		"types": {
 			named: named{"types"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				s := v.(*Schema)
@@ -134,28 +134,28 @@ var introspectionSchemaType = &ObjectType{
 			}),
 			typ: &ListType{&NotNilType{introspectionTypeType}},
 		},
-		"queryType": &FieldDescriptor{
+		"queryType": {
 			named: named{"queryType"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return v.(*Schema).QueryType, nil
 			}),
 			typ: &NotNilType{introspectionTypeType},
 		},
-		"mutationType": &FieldDescriptor{
+		"mutationType": {
 			named: named{"mutationType"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return nil, nil // FUTURE: Mutations not supported
 			}),
 			typ: introspectionTypeType,
 		},
-		"subscriptionType": &FieldDescriptor{
+		"subscriptionType": {
 			named: named{"subscriptionType"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return nil, nil // FUTURE: Subscriptions not supported
 			}),
 			typ: introspectionTypeType,
 		},
-		"directives": &FieldDescriptor{
+		"directives": {
 			named: named{"directives"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return listOfDirectiveDefinitions(v.(*Schema).directives), nil
@@ -170,7 +170,7 @@ var introspectionTypeType = &ObjectType{
 }
 
 var introspectionTypeTypeFields = map[string]*FieldDescriptor{
-	"kind": &FieldDescriptor{
+	"kind": {
 		named: named{"kind"},
 		r: SimpleResolver(func(v interface{}) (interface{}, error) {
 			switch v.(type) {
@@ -195,7 +195,7 @@ var introspectionTypeTypeFields = map[string]*FieldDescriptor{
 		}),
 		typ: &NotNilType{introspectionTypeKindType},
 	},
-	"name": &FieldDescriptor{
+	"name": {
 		named: named{"name"},
 		r: SimpleResolver(func(v interface{}) (interface{}, error) {
 			switch t := v.(type) {
@@ -220,7 +220,7 @@ var introspectionTypeTypeFields = map[string]*FieldDescriptor{
 		}),
 		typ: introspectionStringType,
 	},
-	"description": &FieldDescriptor{
+	"description": {
 		named: named{"description"},
 		r: SimpleResolver(func(v interface{}) (interface{}, error) {
 			switch t := v.(type) {
@@ -245,10 +245,10 @@ var introspectionTypeTypeFields = map[string]*FieldDescriptor{
 		}),
 		typ: introspectionStringType,
 	},
-	"fields": &FieldDescriptor{
+	"fields": {
 		named: named{"fields"},
 		arguments: []*ArgumentDescriptor{
-			&ArgumentDescriptor{
+			{
 				named:        named{"includeDeprecated"},
 				typ:          introspectionBoolType,
 				defaultValue: ast.BooleanValue{V: false},
@@ -270,7 +270,7 @@ var introspectionTypeTypeFields = map[string]*FieldDescriptor{
 		}),
 		typ: &ListType{&NotNilType{introspectionFieldType}},
 	},
-	"interfaces": &FieldDescriptor{
+	"interfaces": {
 		named: named{"interfaces"},
 		r: SimpleResolver(func(v interface{}) (interface{}, error) {
 			switch t := v.(type) {
@@ -281,7 +281,7 @@ var introspectionTypeTypeFields = map[string]*FieldDescriptor{
 		}),
 		typ: &ListType{&NotNilType{introspectionTypeType}},
 	},
-	"possibleTypes": &FieldDescriptor{
+	"possibleTypes": {
 		named: named{"possibleTypes"},
 		r: SimpleResolver(func(v interface{}) (interface{}, error) {
 			switch t := v.(type) {
@@ -294,10 +294,10 @@ var introspectionTypeTypeFields = map[string]*FieldDescriptor{
 		}),
 		typ: &ListType{&NotNilType{introspectionTypeType}},
 	},
-	"enumValues": &FieldDescriptor{
+	"enumValues": {
 		named: named{"enumValues"},
 		arguments: []*ArgumentDescriptor{
-			&ArgumentDescriptor{
+			{
 				named:        named{"includeDeprecated"},
 				typ:          introspectionBoolType,
 				defaultValue: ast.BooleanValue{V: false},
@@ -317,7 +317,7 @@ var introspectionTypeTypeFields = map[string]*FieldDescriptor{
 		}),
 		typ: &ListType{&NotNilType{introspectionEnumValueType}},
 	},
-	"inputFields": &FieldDescriptor{
+	"inputFields": {
 		named: named{"inputFields"},
 		r: SimpleResolver(func(v interface{}) (interface{}, error) {
 			switch t := v.(type) {
@@ -332,7 +332,7 @@ var introspectionTypeTypeFields = map[string]*FieldDescriptor{
 		}),
 		typ: &ListType{&NotNilType{introspectionInputValueType}},
 	},
-	"ofType": &FieldDescriptor{
+	"ofType": {
 		named: named{"inputFields"},
 		r: SimpleResolver(func(v interface{}) (interface{}, error) {
 			switch t := v.(type) {
@@ -354,35 +354,35 @@ func init() {
 var introspectionFieldType = &ObjectType{
 	named: named{"__Field"},
 	fieldsByName: map[string]*FieldDescriptor{
-		"name": &FieldDescriptor{
+		"name": {
 			named: named{"name"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return v.(*FieldDescriptor).name, nil
 			}),
 			typ: &NotNilType{introspectionStringType},
 		},
-		"description": &FieldDescriptor{
+		"description": {
 			named: named{"description"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return v.(*FieldDescriptor).description, nil
 			}),
 			typ: introspectionStringType,
 		},
-		"args": &FieldDescriptor{
+		"args": {
 			named: named{"args"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return listOfArgumentDescriptors(v.(*FieldDescriptor).arguments), nil
 			}),
 			typ: &NotNilType{&ListType{&NotNilType{introspectionInputValueType}}},
 		},
-		"type": &FieldDescriptor{
+		"type": {
 			named: named{"type"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return v.(*FieldDescriptor).typ, nil
 			}),
 			typ: &NotNilType{introspectionTypeType},
 		},
-		"isDeprecated": &FieldDescriptor{
+		"isDeprecated": {
 			named: named{"isDeprecated"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				deprecated, _ := checkDeprecated(v.(*FieldDescriptor).schemaElement)
@@ -390,7 +390,7 @@ var introspectionFieldType = &ObjectType{
 			}),
 			typ: &NotNilType{introspectionBoolType},
 		},
-		"deprecationReason": &FieldDescriptor{
+		"deprecationReason": {
 			named: named{"deprecationReason"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				deprecated, reason := checkDeprecated(v.(*FieldDescriptor).schemaElement)
@@ -407,7 +407,7 @@ var introspectionFieldType = &ObjectType{
 var introspectionInputValueType = &ObjectType{
 	named: named{"__InputValue"},
 	fieldsByName: map[string]*FieldDescriptor{
-		"name": &FieldDescriptor{
+		"name": {
 			named: named{"name"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				switch t := v.(type) {
@@ -420,7 +420,7 @@ var introspectionInputValueType = &ObjectType{
 			}),
 			typ: &NotNilType{introspectionStringType},
 		},
-		"description": &FieldDescriptor{
+		"description": {
 			named: named{"description"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				switch t := v.(type) {
@@ -433,7 +433,7 @@ var introspectionInputValueType = &ObjectType{
 			}),
 			typ: introspectionStringType,
 		},
-		"type": &FieldDescriptor{
+		"type": {
 			named: named{"type"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				switch t := v.(type) {
@@ -446,7 +446,7 @@ var introspectionInputValueType = &ObjectType{
 			}),
 			typ: &NotNilType{introspectionTypeType},
 		},
-		"defaultValue": &FieldDescriptor{
+		"defaultValue": {
 			named: named{"defaultValue"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				switch t := v.(type) {
@@ -465,21 +465,21 @@ var introspectionInputValueType = &ObjectType{
 var introspectionEnumValueType = &ObjectType{
 	named: named{"__EnumValue"},
 	fieldsByName: map[string]*FieldDescriptor{
-		"name": &FieldDescriptor{
+		"name": {
 			named: named{"name"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return v.(*enumValueDescriptor).name, nil
 			}),
 			typ: &NotNilType{introspectionStringType},
 		},
-		"description": &FieldDescriptor{
+		"description": {
 			named: named{"description"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return v.(*enumValueDescriptor).description, nil
 			}),
 			typ: introspectionStringType,
 		},
-		"isDeprecated": &FieldDescriptor{
+		"isDeprecated": {
 			named: named{"isDeprecated"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				deprecated, _ := checkDeprecated(v.(*enumValueDescriptor).schemaElement)
@@ -487,7 +487,7 @@ var introspectionEnumValueType = &ObjectType{
 			}),
 			typ: &NotNilType{introspectionBoolType},
 		},
-		"deprecationReason": &FieldDescriptor{
+		"deprecationReason": {
 			named: named{"deprecationReason"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				deprecated, reason := checkDeprecated(v.(*enumValueDescriptor).schemaElement)
@@ -504,21 +504,21 @@ var introspectionEnumValueType = &ObjectType{
 var introspectionDirectiveType = &ObjectType{
 	named: named{"__Directive"},
 	fieldsByName: map[string]*FieldDescriptor{
-		"name": &FieldDescriptor{
+		"name": {
 			named: named{"name"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return v.(*DirectiveDefinition).name, nil
 			}),
 			typ: &NotNilType{introspectionStringType},
 		},
-		"description": &FieldDescriptor{
+		"description": {
 			named: named{"description"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return v.(*DirectiveDefinition).description, nil
 			}),
 			typ: introspectionStringType,
 		},
-		"args": &FieldDescriptor{
+		"args": {
 			named: named{"args"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				dd := v.(*DirectiveDefinition)
@@ -526,7 +526,7 @@ var introspectionDirectiveType = &ObjectType{
 			}),
 			typ: &NotNilType{&ListType{&NotNilType{introspectionInputValueType}}},
 		},
-		"locations": &FieldDescriptor{
+		"locations": {
 			named: named{"type"},
 			r: SimpleResolver(func(v interface{}) (interface{}, error) {
 				return listOfDirectiveLocations(v.(*DirectiveDefinition).locations), nil
@@ -634,9 +634,9 @@ func makeIntrospectionEnumValues(typ *EnumType, includeDeprecated bool) []*enumV
 	return r
 }
 
-func makeIntrospectionDefaultValue(val ast.Value, forType Type) string {
+func makeIntrospectionDefaultValue(val ast.Value, forType Type) interface{} {
 	if val == nil {
-		return ""
+		return nil
 	}
 
 	return val.Representation()
