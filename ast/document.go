@@ -69,9 +69,9 @@ func (d *Document) LookupFragmentDefinition(name string) *FragmentDefinition {
 	return nil
 }
 
-func (d *Document) MarshallGraphQL(w io.Writer) error {
+func (d *Document) MarshalGraphQL(w io.Writer) error {
 	for _, op := range d.OperationDefinitions {
-		if err := op.MarshallGraphQL(w); err != nil {
+		if err := op.MarshalGraphQL(w); err != nil {
 			return err
 		}
 	}

@@ -26,10 +26,27 @@ SOFTWARE.
  
 grammar Graphql;
 
+@lexer::header {
+    func isDigit(c int) bool {
+        return c >= '0' && c <= '9';
+    }
+    func isNameStart(c int) bool {
+        return '_' == c ||
+          (c >= 'A' && c <= 'Z') ||
+          (c >= 'a' && c <= 'z');
+    }
+    func isDot(c int) bool {
+        return '.' == c;
+    }
+}
+
 /* Common */
 operationType : SUBSCRIPTION | MUTATION | QUERY;
 
-enumValue : name ;
+description : StringValue;
+
+enumValue : enumValueName ;
+
 
 arrayValue: '[' value* ']';
 
@@ -52,10 +69,14 @@ arguments : '(' argument+ ')';
 
 argument : name ':' valueWithVariable;
 
-name: NAME | FRAGMENT | QUERY | MUTATION | SUBSCRIPTION | SCHEMA | SCALAR | TYPE | INTERFACE | IMPLEMENTS | ENUM | UNION | INPUT | EXTEND | DIRECTIVE;
+baseName: NAME | FRAGMENT | QUERY | MUTATION | SUBSCRIPTION | SCHEMA | SCALAR | TYPE | INTERFACE | IMPLEMENTS | ENUM | UNION | INPUT | EXTEND | DIRECTIVE | REPEATABLE;
+fragmentName: baseName | BooleanValue | NullValue;
+enumValueName: baseName | ON_KEYWORD;
+
+name: baseName | BooleanValue | NullValue | ON_KEYWORD;
 
 value :
-stringValue |
+StringValue |
 IntValue |
 FloatValue |
 BooleanValue |
@@ -67,7 +88,7 @@ objectValue;
 
 valueWithVariable :
 variable |
-stringValue |
+StringValue |
 IntValue |
 FloatValue |
 BooleanValue |
@@ -81,10 +102,6 @@ variable : '$' name;
 
 defaultValue : '=' value;
 
-stringValue
- : TripleQuotedStringValue
- | StringValue
- ;
 gqlType : typeName | listType | nonNullType;
 
 typeName : name;
@@ -110,45 +127,55 @@ UNION: 'union';
 INPUT: 'input';
 EXTEND: 'extend';
 DIRECTIVE: 'directive';
+ON_KEYWORD: 'on';
+REPEATABLE: 'repeatable';
 NAME: [_A-Za-z][_0-9A-Za-z]*;
 
 
-IntValue : Sign? IntegerPart;
+// Int Value
+IntValue :  IntegerPart { !isDigit(p.GetInputStream().LA(1)) && !isDot(p.GetInputStream().LA(1)) && !isNameStart(p.GetInputStream().LA(1))  }?;
+fragment IntegerPart : NegativeSign? '0' | NegativeSign? NonZeroDigit Digit*;
+fragment NegativeSign : '-';
+fragment NonZeroDigit: '1'..'9';
 
-FloatValue : Sign? IntegerPart ('.' Digit+)? ExponentPart?;
-
-Sign : '-';
-
-IntegerPart : '0' | NonZeroDigit | NonZeroDigit Digit+;
-
-NonZeroDigit: '1'.. '9';
-
-ExponentPart : ('e'|'E') Sign? Digit+;
-
-Digit : '0'..'9';
+// Float Value
+FloatValue : ((IntegerPart FractionalPart ExponentPart) { !isDigit(p.GetInputStream().LA(1)) && !isDot(p.GetInputStream().LA(1)) && !isNameStart(p.GetInputStream().LA(1))  }?) |
+    ((IntegerPart FractionalPart ) { !isDigit(p.GetInputStream().LA(1)) && !isDot(p.GetInputStream().LA(1)) && !isNameStart(p.GetInputStream().LA(1))  }?) |
+    ((IntegerPart ExponentPart) { !isDigit(p.GetInputStream().LA(1)) && !isDot(p.GetInputStream().LA(1)) && !isNameStart(p.GetInputStream().LA(1))  }?);
+fragment FractionalPart: '.' Digit+;
+fragment ExponentPart :  ExponentIndicator Sign? Digit+;
+fragment ExponentIndicator: 'e' | 'E';
+fragment Sign: '+'|'-';
+fragment Digit : '0'..'9';
 
 
-StringValue
- : '"' ( ~["\\\n\r\u2028\u2029] | EscapedChar )* '"'
- ;
-TripleQuotedStringValue
- : '"""' TripleQuotedStringPart? '"""'
- ;
-// Fragments never become a token of their own: they are only used inside other lexer rules
-fragment TripleQuotedStringPart : ( EscapedTripleQuote | SourceCharacter )+?;
-fragment EscapedTripleQuote : '\\"""';
+// StringValue
+StringValue:
+'""'  { p.GetInputStream().LA(1) != '"'}? |
+'"' StringCharacter+ '"' |
+'"""' BlockStringCharacter*? '"""';
+
+fragment BlockStringCharacter:
+'\\"""'|
+SourceCharacter;
+
+
+fragment StringCharacter:
+[\u0009\u0020\u0021\u0023-\u005B\u005D-\uFFFF] |
+'\\u' EscapedUnicode  |
+'\\' EscapedCharacter;
+
+fragment EscapedCharacter :  ["\\/bfnrt];
+fragment EscapedUnicode : Hex Hex Hex Hex;
+fragment Hex : [0-9a-fA-F];
 fragment SourceCharacter :[\u0009\u000A\u000D\u0020-\uFFFF];
-Comment: '#' ~[\n\r\u2028\u2029]* -> channel(2);
-Ignored: (UnicodeBOM|Whitespace|LineTerminator|Comma) -> skip;
-fragment EscapedChar :   '\\' (["\\/bfnrt] | Unicode) ;
-fragment Unicode : 'u' Hex Hex Hex Hex ;
-fragment Hex : [0-9a-fA-F] ;
-
-fragment LineTerminator: [\n\r\u2028\u2029];
-
-fragment Whitespace : [\u0009\u0020];
-fragment Comma : ',';
+Ignored: (UnicodeBOM|WhiteSpace|LineTerminator|Comment|Comma) -> skip;
 fragment UnicodeBOM : [\ufeff];
+fragment WhiteSpace : [\u0009\u0020];
+fragment LineTerminator: '\r\n' | [\n\r];
+fragment CommentChar : [\u0009\u0020-\uFFFF];
+fragment Comment: '#' CommentChar*;
+fragment Comma : ',';
 
 /* Operation */
 operationDefinition:
@@ -157,7 +184,7 @@ operationType  name? variableDefinitions? directives? selectionSet;
 
 variableDefinitions : '(' variableDefinition+ ')';
 
-variableDefinition : variable ':' gqlType defaultValue?;
+variableDefinition : variable ':' gqlType defaultValue? directives?;
 
 
 selectionSet :  '{' selection+ '}';
@@ -178,26 +205,31 @@ fragmentSpread : '...' fragmentName directives?;
 
 inlineFragment : '...' typeCondition? directives? selectionSet;
 
-fragmentDefinition : 'fragment' fragmentName typeCondition directives? selectionSet;
+fragmentDefinition : FRAGMENT fragmentName typeCondition directives? selectionSet;
 
-fragmentName :  name;
-
-typeCondition : 'on' typeName;
+typeCondition : ON_KEYWORD typeName;
 
 /* Document */
 document : (operationDefinition | fragmentDefinition)+;
 
 /* Schema */
-description : stringValue;
-
-typeSystemDefinition: description?
+typeSystemDefinition:
 schemaDefinition |
 typeDefinition |
-typeExtension |
 directiveDefinition
 ;
 
+typeSystemExtension :
+schemaExtension |
+typeExtension
+;
+
 schemaDefinition : description? SCHEMA directives? '{' operationTypeDefinition+ '}';
+
+schemaExtension :
+    EXTEND SCHEMA directives? '{' operationTypeDefinition+ '}' |
+    EXTEND SCHEMA directives+
+;
 
 operationTypeDefinition : description? operationType ':' typeName;
 
@@ -224,6 +256,7 @@ typeExtension :
     inputObjectTypeExtensionDefinition
 ;
 
+emptyParentheses : '{' '}';
 
 scalarTypeDefinition : description? SCALAR name directives?;
 
@@ -231,13 +264,19 @@ scalarTypeExtensionDefinition : EXTEND SCALAR name directives?;
 
 objectTypeDefinition : description? TYPE name implementsInterfaces? directives? fieldsDefinition?;
 
-objectTypeExtensionDefinition : EXTEND TYPE name implementsInterfaces? directives? fieldsDefinition?;
+objectTypeExtensionDefinition :
+    EXTEND TYPE name implementsInterfaces? directives? extensionFieldsDefinition |
+    EXTEND TYPE name implementsInterfaces? directives emptyParentheses? |
+    EXTEND TYPE name implementsInterfaces
+;
 
 implementsInterfaces :
     IMPLEMENTS '&'? typeName+ |
     implementsInterfaces '&' typeName ;
 
 fieldsDefinition : '{' fieldDefinition* '}';
+
+extensionFieldsDefinition : '{' fieldDefinition+ '}';
 
 fieldDefinition : description? name argumentsDefinition? ':' gqlType directives?;
 
@@ -247,12 +286,19 @@ inputValueDefinition : description? name ':' gqlType defaultValue? directives?;
 
 interfaceTypeDefinition : description? INTERFACE name directives? fieldsDefinition?;
 
-interfaceTypeExtensionDefinition : EXTEND INTERFACE name directives? fieldsDefinition?;
+interfaceTypeExtensionDefinition :
+    EXTEND INTERFACE name implementsInterfaces? directives? extensionFieldsDefinition |
+    EXTEND INTERFACE name implementsInterfaces? directives emptyParentheses? |
+    EXTEND INTERFACE name implementsInterfaces
+;
 
 
 unionTypeDefinition : description? UNION name directives? unionMembership;
 
-unionTypeExtensionDefinition : EXTEND UNION name directives? unionMembership?;
+unionTypeExtensionDefinition :
+    EXTEND UNION name directives? unionMembership |
+    EXTEND UNION name directives
+;
 
 unionMembership : '=' unionMembers;
 
@@ -261,28 +307,38 @@ unionMembers:
 unionMembers '|' typeName
 ;
 
-enumTypeDefinition : description? ENUM name directives? enumValueDefinitions;
+enumTypeDefinition : description? ENUM name directives? enumValueDefinitions?;
 
-enumTypeExtensionDefinition : EXTEND ENUM name directives? enumValueDefinitions?;
+enumTypeExtensionDefinition :
+    EXTEND ENUM name directives? extensionEnumValueDefinitions |
+    EXTEND ENUM name directives emptyParentheses?
+;
 
-enumValueDefinitions : '{' enumValueDefinition+ '}';
+enumValueDefinitions : '{' enumValueDefinition* '}';
+
+extensionEnumValueDefinitions : '{' enumValueDefinition+ '}';
 
 enumValueDefinition : description? enumValue directives?;
 
 
-inputObjectTypeDefinition : description? INPUT name directives? inputObjectValueDefinitions;
+inputObjectTypeDefinition : description? INPUT name directives? inputObjectValueDefinitions?;
 
-inputObjectTypeExtensionDefinition : EXTEND INPUT name directives? inputObjectValueDefinitions?;
+inputObjectTypeExtensionDefinition :
+    EXTEND INPUT name directives? extensionInputObjectValueDefinitions |
+    EXTEND INPUT name directives emptyParentheses?
+;
 
-inputObjectValueDefinitions : '{' inputValueDefinition+ '}';
+inputObjectValueDefinitions : '{' inputValueDefinition* '}';
+
+extensionInputObjectValueDefinitions : '{' inputValueDefinition+ '}';
 
 
-directiveDefinition : description? DIRECTIVE '@' name argumentsDefinition? 'on' directiveLocations;
+directiveDefinition : description? DIRECTIVE '@' name argumentsDefinition? REPEATABLE? ON_KEYWORD directiveLocations;
 
 directiveLocation : name;
 
 directiveLocations :
-directiveLocation |
+'|'? directiveLocation |
 directiveLocations '|' directiveLocation
 ;
 

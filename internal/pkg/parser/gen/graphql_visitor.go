@@ -1,4 +1,4 @@
-// Code generated from grammar/Graphql.g4 by ANTLR 4.9.2. DO NOT EDIT.
+// Code generated from /Users/mpoindexter/dev/gq/grammar/Graphql.g4 by ANTLR 4.10.1. DO NOT EDIT.
 
 package gen // Graphql
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -9,6 +9,9 @@ type GraphqlVisitor interface {
 
 	// Visit a parse tree produced by GraphqlParser#operationType.
 	VisitOperationType(ctx *OperationTypeContext) interface{}
+
+	// Visit a parse tree produced by GraphqlParser#description.
+	VisitDescription(ctx *DescriptionContext) interface{}
 
 	// Visit a parse tree produced by GraphqlParser#enumValue.
 	VisitEnumValue(ctx *EnumValueContext) interface{}
@@ -43,6 +46,15 @@ type GraphqlVisitor interface {
 	// Visit a parse tree produced by GraphqlParser#argument.
 	VisitArgument(ctx *ArgumentContext) interface{}
 
+	// Visit a parse tree produced by GraphqlParser#baseName.
+	VisitBaseName(ctx *BaseNameContext) interface{}
+
+	// Visit a parse tree produced by GraphqlParser#fragmentName.
+	VisitFragmentName(ctx *FragmentNameContext) interface{}
+
+	// Visit a parse tree produced by GraphqlParser#enumValueName.
+	VisitEnumValueName(ctx *EnumValueNameContext) interface{}
+
 	// Visit a parse tree produced by GraphqlParser#name.
 	VisitName(ctx *NameContext) interface{}
 
@@ -57,9 +69,6 @@ type GraphqlVisitor interface {
 
 	// Visit a parse tree produced by GraphqlParser#defaultValue.
 	VisitDefaultValue(ctx *DefaultValueContext) interface{}
-
-	// Visit a parse tree produced by GraphqlParser#stringValue.
-	VisitStringValue(ctx *StringValueContext) interface{}
 
 	// Visit a parse tree produced by GraphqlParser#gqlType.
 	VisitGqlType(ctx *GqlTypeContext) interface{}
@@ -103,23 +112,23 @@ type GraphqlVisitor interface {
 	// Visit a parse tree produced by GraphqlParser#fragmentDefinition.
 	VisitFragmentDefinition(ctx *FragmentDefinitionContext) interface{}
 
-	// Visit a parse tree produced by GraphqlParser#fragmentName.
-	VisitFragmentName(ctx *FragmentNameContext) interface{}
-
 	// Visit a parse tree produced by GraphqlParser#typeCondition.
 	VisitTypeCondition(ctx *TypeConditionContext) interface{}
 
 	// Visit a parse tree produced by GraphqlParser#document.
 	VisitDocument(ctx *DocumentContext) interface{}
 
-	// Visit a parse tree produced by GraphqlParser#description.
-	VisitDescription(ctx *DescriptionContext) interface{}
-
 	// Visit a parse tree produced by GraphqlParser#typeSystemDefinition.
 	VisitTypeSystemDefinition(ctx *TypeSystemDefinitionContext) interface{}
 
+	// Visit a parse tree produced by GraphqlParser#typeSystemExtension.
+	VisitTypeSystemExtension(ctx *TypeSystemExtensionContext) interface{}
+
 	// Visit a parse tree produced by GraphqlParser#schemaDefinition.
 	VisitSchemaDefinition(ctx *SchemaDefinitionContext) interface{}
+
+	// Visit a parse tree produced by GraphqlParser#schemaExtension.
+	VisitSchemaExtension(ctx *SchemaExtensionContext) interface{}
 
 	// Visit a parse tree produced by GraphqlParser#operationTypeDefinition.
 	VisitOperationTypeDefinition(ctx *OperationTypeDefinitionContext) interface{}
@@ -129,6 +138,9 @@ type GraphqlVisitor interface {
 
 	// Visit a parse tree produced by GraphqlParser#typeExtension.
 	VisitTypeExtension(ctx *TypeExtensionContext) interface{}
+
+	// Visit a parse tree produced by GraphqlParser#emptyParentheses.
+	VisitEmptyParentheses(ctx *EmptyParenthesesContext) interface{}
 
 	// Visit a parse tree produced by GraphqlParser#scalarTypeDefinition.
 	VisitScalarTypeDefinition(ctx *ScalarTypeDefinitionContext) interface{}
@@ -147,6 +159,9 @@ type GraphqlVisitor interface {
 
 	// Visit a parse tree produced by GraphqlParser#fieldsDefinition.
 	VisitFieldsDefinition(ctx *FieldsDefinitionContext) interface{}
+
+	// Visit a parse tree produced by GraphqlParser#extensionFieldsDefinition.
+	VisitExtensionFieldsDefinition(ctx *ExtensionFieldsDefinitionContext) interface{}
 
 	// Visit a parse tree produced by GraphqlParser#fieldDefinition.
 	VisitFieldDefinition(ctx *FieldDefinitionContext) interface{}
@@ -184,6 +199,9 @@ type GraphqlVisitor interface {
 	// Visit a parse tree produced by GraphqlParser#enumValueDefinitions.
 	VisitEnumValueDefinitions(ctx *EnumValueDefinitionsContext) interface{}
 
+	// Visit a parse tree produced by GraphqlParser#extensionEnumValueDefinitions.
+	VisitExtensionEnumValueDefinitions(ctx *ExtensionEnumValueDefinitionsContext) interface{}
+
 	// Visit a parse tree produced by GraphqlParser#enumValueDefinition.
 	VisitEnumValueDefinition(ctx *EnumValueDefinitionContext) interface{}
 
@@ -195,6 +213,9 @@ type GraphqlVisitor interface {
 
 	// Visit a parse tree produced by GraphqlParser#inputObjectValueDefinitions.
 	VisitInputObjectValueDefinitions(ctx *InputObjectValueDefinitionsContext) interface{}
+
+	// Visit a parse tree produced by GraphqlParser#extensionInputObjectValueDefinitions.
+	VisitExtensionInputObjectValueDefinitions(ctx *ExtensionInputObjectValueDefinitionsContext) interface{}
 
 	// Visit a parse tree produced by GraphqlParser#directiveDefinition.
 	VisitDirectiveDefinition(ctx *DirectiveDefinitionContext) interface{}

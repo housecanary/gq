@@ -1,4 +1,4 @@
-// Code generated from grammar/Graphql.g4 by ANTLR 4.9.2. DO NOT EDIT.
+// Code generated from /Users/mpoindexter/dev/gq/grammar/Graphql.g4 by ANTLR 4.10.1. DO NOT EDIT.
 
 package gen // Graphql
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -8,6 +8,10 @@ type BaseGraphqlVisitor struct {
 }
 
 func (v *BaseGraphqlVisitor) VisitOperationType(ctx *OperationTypeContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseGraphqlVisitor) VisitDescription(ctx *DescriptionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -55,6 +59,18 @@ func (v *BaseGraphqlVisitor) VisitArgument(ctx *ArgumentContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseGraphqlVisitor) VisitBaseName(ctx *BaseNameContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseGraphqlVisitor) VisitFragmentName(ctx *FragmentNameContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseGraphqlVisitor) VisitEnumValueName(ctx *EnumValueNameContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseGraphqlVisitor) VisitName(ctx *NameContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -72,10 +88,6 @@ func (v *BaseGraphqlVisitor) VisitVariable(ctx *VariableContext) interface{} {
 }
 
 func (v *BaseGraphqlVisitor) VisitDefaultValue(ctx *DefaultValueContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseGraphqlVisitor) VisitStringValue(ctx *StringValueContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -135,10 +147,6 @@ func (v *BaseGraphqlVisitor) VisitFragmentDefinition(ctx *FragmentDefinitionCont
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseGraphqlVisitor) VisitFragmentName(ctx *FragmentNameContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
 func (v *BaseGraphqlVisitor) VisitTypeCondition(ctx *TypeConditionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -147,15 +155,19 @@ func (v *BaseGraphqlVisitor) VisitDocument(ctx *DocumentContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseGraphqlVisitor) VisitDescription(ctx *DescriptionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
 func (v *BaseGraphqlVisitor) VisitTypeSystemDefinition(ctx *TypeSystemDefinitionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseGraphqlVisitor) VisitTypeSystemExtension(ctx *TypeSystemExtensionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseGraphqlVisitor) VisitSchemaDefinition(ctx *SchemaDefinitionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseGraphqlVisitor) VisitSchemaExtension(ctx *SchemaExtensionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -168,6 +180,10 @@ func (v *BaseGraphqlVisitor) VisitTypeDefinition(ctx *TypeDefinitionContext) int
 }
 
 func (v *BaseGraphqlVisitor) VisitTypeExtension(ctx *TypeExtensionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseGraphqlVisitor) VisitEmptyParentheses(ctx *EmptyParenthesesContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -192,6 +208,10 @@ func (v *BaseGraphqlVisitor) VisitImplementsInterfaces(ctx *ImplementsInterfaces
 }
 
 func (v *BaseGraphqlVisitor) VisitFieldsDefinition(ctx *FieldsDefinitionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseGraphqlVisitor) VisitExtensionFieldsDefinition(ctx *ExtensionFieldsDefinitionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -243,6 +263,10 @@ func (v *BaseGraphqlVisitor) VisitEnumValueDefinitions(ctx *EnumValueDefinitions
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseGraphqlVisitor) VisitExtensionEnumValueDefinitions(ctx *ExtensionEnumValueDefinitionsContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseGraphqlVisitor) VisitEnumValueDefinition(ctx *EnumValueDefinitionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -256,6 +280,10 @@ func (v *BaseGraphqlVisitor) VisitInputObjectTypeExtensionDefinition(ctx *InputO
 }
 
 func (v *BaseGraphqlVisitor) VisitInputObjectValueDefinitions(ctx *InputObjectValueDefinitionsContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseGraphqlVisitor) VisitExtensionInputObjectValueDefinitions(ctx *ExtensionInputObjectValueDefinitionsContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

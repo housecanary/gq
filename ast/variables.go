@@ -20,7 +20,7 @@ import (
 
 type VariableDefinitions []*VariableDefinition
 
-func (v VariableDefinitions) MarshallGraphQL(w io.Writer) error {
+func (v VariableDefinitions) MarshalGraphQL(w io.Writer) error {
 	if len(v) > 0 {
 		if _, err := w.Write([]byte("(")); err != nil {
 			return err
@@ -33,7 +33,7 @@ func (v VariableDefinitions) MarshallGraphQL(w io.Writer) error {
 				}
 			}
 
-			if err := def.MarshallGraphQL(w); err != nil {
+			if err := def.MarshalGraphQL(w); err != nil {
 				return err
 			}
 		}
@@ -50,9 +50,10 @@ type VariableDefinition struct {
 	VariableName string
 	Type         Type
 	DefaultValue Value
+	Directives   Directives
 }
 
-func (v *VariableDefinition) MarshallGraphQL(w io.Writer) error {
+func (v *VariableDefinition) MarshalGraphQL(w io.Writer) error {
 	if _, err := w.Write([]byte("$")); err != nil {
 		return err
 	}
@@ -78,5 +79,12 @@ func (v *VariableDefinition) MarshallGraphQL(w io.Writer) error {
 			return err
 		}
 	}
+
+	if v.Directives != nil {
+		if err := v.Directives.MarshalGraphQL(w); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

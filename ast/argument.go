@@ -18,7 +18,7 @@ import "io"
 
 type Arguments []*Argument
 
-func (v Arguments) MarshallGraphQL(w io.Writer) error {
+func (v Arguments) MarshalGraphQL(w io.Writer) error {
 	if len(v) > 0 {
 		if _, err := w.Write([]byte("(")); err != nil {
 			return err
@@ -31,7 +31,7 @@ func (v Arguments) MarshallGraphQL(w io.Writer) error {
 				}
 			}
 
-			if err := a.MarshallGraphQL(w); err != nil {
+			if err := a.MarshalGraphQL(w); err != nil {
 				return err
 			}
 		}
@@ -48,7 +48,7 @@ type Argument struct {
 	Value Value
 }
 
-func (v *Argument) MarshallGraphQL(w io.Writer) error {
+func (v *Argument) MarshalGraphQL(w io.Writer) error {
 	if _, err := w.Write([]byte(v.Name)); err != nil {
 		return err
 	}

@@ -23,32 +23,19 @@ type schemaVisitor struct {
 	BaseASTBuilderVisitor
 }
 
+// Currently type system extensions are unsupported so do not visit any
+func (v *schemaVisitor) VisitTypeSystemExtension(ctx *gen.TypeSystemExtensionContext) interface{} {
+	return nil
+}
+
+// Currently directive definitions are not processed
+func (v *schemaVisitor) VisitDirectiveDefinition(ctx *gen.DirectiveDefinitionContext) interface{} {
+	return nil
+}
+
 func (v *schemaVisitor) VisitDescription(ctx *gen.DescriptionContext) interface{} {
-	sv := ctx.StringValue().Accept(v).(ast.StringValue)
-	return sv.V
+	return parseString(ctx.StringValue().GetText())
 }
-
-/*
-func (v *schemaVisitor) VisitTypeSystemDefinition(ctx *gen.TypeSystemDefinitionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *schemaVisitor) VisitSchemaDefinition(ctx *gen.SchemaDefinitionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *schemaVisitor) VisitOperationTypeDefinition(ctx *gen.OperationTypeDefinitionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *schemaVisitor) VisitTypeDefinition(ctx *gen.TypeDefinitionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *schemaVisitor) VisitTypeExtension(ctx *gen.TypeExtensionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-*/
 
 func (v *schemaVisitor) VisitScalarTypeDefinition(ctx *gen.ScalarTypeDefinitionContext) interface{} {
 	var d ast.ScalarTypeDefinition
@@ -63,12 +50,6 @@ func (v *schemaVisitor) VisitScalarTypeDefinition(ctx *gen.ScalarTypeDefinitionC
 
 	return &d
 }
-
-/*
-func (v *schemaVisitor) VisitScalarTypeExtensionDefinition(ctx *gen.ScalarTypeExtensionDefinitionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-*/
 
 func (v *schemaVisitor) VisitObjectTypeDefinition(ctx *gen.ObjectTypeDefinitionContext) interface{} {
 	var d ast.ObjectTypeDefinition
@@ -91,12 +72,6 @@ func (v *schemaVisitor) VisitObjectTypeDefinition(ctx *gen.ObjectTypeDefinitionC
 
 	return &d
 }
-
-/*
-func (v *schemaVisitor) VisitObjectTypeExtensionDefinition(ctx *gen.ObjectTypeExtensionDefinitionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-*/
 
 func (v *schemaVisitor) VisitImplementsInterfaces(ctx *gen.ImplementsInterfacesContext) interface{} {
 	var d ast.ImplementsInterfaces
@@ -179,12 +154,6 @@ func (v *schemaVisitor) VisitInterfaceTypeDefinition(ctx *gen.InterfaceTypeDefin
 	return &d
 }
 
-/*
-func (v *schemaVisitor) VisitInterfaceTypeExtensionDefinition(ctx *gen.InterfaceTypeExtensionDefinitionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-*/
-
 func (v *schemaVisitor) VisitUnionTypeDefinition(ctx *gen.UnionTypeDefinitionContext) interface{} {
 	var d ast.UnionTypeDefinition
 	if c := ctx.Description(); c != nil {
@@ -199,12 +168,6 @@ func (v *schemaVisitor) VisitUnionTypeDefinition(ctx *gen.UnionTypeDefinitionCon
 	d.UnionMembership = ctx.UnionMembership().Accept(v).(ast.UnionMembership)
 	return &d
 }
-
-/*
-func (v *schemaVisitor) VisitUnionTypeExtensionDefinition(ctx *gen.UnionTypeExtensionDefinitionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-*/
 
 func (v *schemaVisitor) VisitUnionMembership(ctx *gen.UnionMembershipContext) interface{} {
 	return ctx.UnionMembers().Accept(v)
@@ -231,16 +194,12 @@ func (v *schemaVisitor) VisitEnumTypeDefinition(ctx *gen.EnumTypeDefinitionConte
 		d.Directives = c.Accept(v).(ast.Directives)
 	}
 
-	d.EnumValueDefinitions = ctx.EnumValueDefinitions().Accept(v).(ast.EnumValueDefinitions)
+	if c := ctx.EnumValueDefinitions(); c != nil {
+		d.EnumValueDefinitions = c.Accept(v).(ast.EnumValueDefinitions)
+	}
 
 	return &d
 }
-
-/*
-func (v *schemaVisitor) VisitEnumTypeExtensionDefinition(ctx *gen.EnumTypeExtensionDefinitionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-*/
 
 func (v *schemaVisitor) VisitEnumValueDefinitions(ctx *gen.EnumValueDefinitionsContext) interface{} {
 	var d ast.EnumValueDefinitions
@@ -280,12 +239,6 @@ func (v *schemaVisitor) VisitInputObjectTypeDefinition(ctx *gen.InputObjectTypeD
 	return &d
 }
 
-/*
-func (v *schemaVisitor) VisitInputObjectTypeExtensionDefinition(ctx *gen.InputObjectTypeExtensionDefinitionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-*/
-
 func (v *schemaVisitor) VisitInputObjectValueDefinitions(ctx *gen.InputObjectValueDefinitionsContext) interface{} {
 	var d ast.InputObjectValueDefinitions
 	for _, c := range ctx.AllInputValueDefinition() {
@@ -293,21 +246,6 @@ func (v *schemaVisitor) VisitInputObjectValueDefinitions(ctx *gen.InputObjectVal
 	}
 	return d
 }
-
-/*
-
-func (v *schemaVisitor) VisitDirectiveDefinition(ctx *gen.DirectiveDefinitionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *schemaVisitor) VisitDirectiveLocation(ctx *gen.DirectiveLocationContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *schemaVisitor) VisitDirectiveLocations(ctx *gen.DirectiveLocationsContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-*/
 
 func (v *schemaVisitor) VisitPartialFieldDefinition(ctx *gen.PartialFieldDefinitionContext) interface{} {
 	var d ast.FieldDefinition

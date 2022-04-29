@@ -196,7 +196,7 @@ func (v String) CollectInto(col schema.ScalarCollector) {
 	}
 }
 
-// UnmarshalJSON implements json.Unmarshaller
+// UnmarshalJSON implements json.Unmarshaler
 func (v *String) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte{'n', 'u', 'l', 'l'}) {
 		v.present = false
@@ -316,7 +316,7 @@ func (v Int) CollectInto(col schema.ScalarCollector) {
 	}
 }
 
-// UnmarshalJSON implements json.Unmarshaller
+// UnmarshalJSON implements json.Unmarshaler
 func (v *Int) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte{'n', 'u', 'l', 'l'}) {
 		v.present = false
@@ -446,7 +446,7 @@ func (v Float) CollectInto(col schema.ScalarCollector) {
 	}
 }
 
-// UnmarshalJSON implements json.Unmarshaller
+// UnmarshalJSON implements json.Unmarshaler
 func (v *Float) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte{'n', 'u', 'l', 'l'}) {
 		v.present = false
@@ -582,7 +582,7 @@ func (v Boolean) CollectInto(col schema.ScalarCollector) {
 	}
 }
 
-// UnmarshalJSON implements json.Unmarshaller
+// UnmarshalJSON implements json.Unmarshaler
 func (v *Boolean) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte{'n', 'u', 'l', 'l'}) {
 		v.present = false

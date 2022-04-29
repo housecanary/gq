@@ -68,6 +68,9 @@ func (v *queryDocumentVisitor) VisitVariableDefinition(ctx *gen.VariableDefiniti
 	if c := ctx.DefaultValue(); c != nil {
 		def.DefaultValue = c.Accept(v).(ast.Value)
 	}
+	if c := ctx.Directives(); c != nil {
+		def.Directives = c.Accept(v).(ast.Directives)
+	}
 	return &def
 }
 
@@ -154,7 +157,7 @@ func (v *queryDocumentVisitor) VisitFragmentDefinition(ctx *gen.FragmentDefiniti
 }
 
 func (v *queryDocumentVisitor) VisitFragmentName(ctx *gen.FragmentNameContext) interface{} {
-	return ctx.Name().Accept(v)
+	return ctx.GetText()
 }
 
 func (v *queryDocumentVisitor) VisitTypeCondition(ctx *gen.TypeConditionContext) interface{} {

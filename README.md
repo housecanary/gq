@@ -220,7 +220,7 @@ type Drinks struct {
 
 #### Scalar types
 
-Anything that implements `types.ScalarMarshaler` and `types.ScalarUnmarshaller`. Built in scalars are available in the types package. Nothing forces the use of these built in scalars - you could define your own `String` scalar for example if you wanted to.
+Anything that implements `types.ScalarMarshaler` and `types.ScalarUnmarshaler`. Built in scalars are available in the types package. Nothing forces the use of these built in scalars - you could define your own `String` scalar for example if you wanted to.
 
 #### Input Objects
 

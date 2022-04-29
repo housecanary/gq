@@ -1,4 +1,4 @@
-// Code generated from grammar/Graphql.g4 by ANTLR 4.9.2. DO NOT EDIT.
+// Code generated from /Users/mpoindexter/dev/gq/grammar/Graphql.g4 by ANTLR 4.10.1. DO NOT EDIT.
 
 package gen // Graphql
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -9,6 +9,9 @@ type GraphqlListener interface {
 
 	// EnterOperationType is called when entering the operationType production.
 	EnterOperationType(c *OperationTypeContext)
+
+	// EnterDescription is called when entering the description production.
+	EnterDescription(c *DescriptionContext)
 
 	// EnterEnumValue is called when entering the enumValue production.
 	EnterEnumValue(c *EnumValueContext)
@@ -43,6 +46,15 @@ type GraphqlListener interface {
 	// EnterArgument is called when entering the argument production.
 	EnterArgument(c *ArgumentContext)
 
+	// EnterBaseName is called when entering the baseName production.
+	EnterBaseName(c *BaseNameContext)
+
+	// EnterFragmentName is called when entering the fragmentName production.
+	EnterFragmentName(c *FragmentNameContext)
+
+	// EnterEnumValueName is called when entering the enumValueName production.
+	EnterEnumValueName(c *EnumValueNameContext)
+
 	// EnterName is called when entering the name production.
 	EnterName(c *NameContext)
 
@@ -57,9 +69,6 @@ type GraphqlListener interface {
 
 	// EnterDefaultValue is called when entering the defaultValue production.
 	EnterDefaultValue(c *DefaultValueContext)
-
-	// EnterStringValue is called when entering the stringValue production.
-	EnterStringValue(c *StringValueContext)
 
 	// EnterGqlType is called when entering the gqlType production.
 	EnterGqlType(c *GqlTypeContext)
@@ -103,23 +112,23 @@ type GraphqlListener interface {
 	// EnterFragmentDefinition is called when entering the fragmentDefinition production.
 	EnterFragmentDefinition(c *FragmentDefinitionContext)
 
-	// EnterFragmentName is called when entering the fragmentName production.
-	EnterFragmentName(c *FragmentNameContext)
-
 	// EnterTypeCondition is called when entering the typeCondition production.
 	EnterTypeCondition(c *TypeConditionContext)
 
 	// EnterDocument is called when entering the document production.
 	EnterDocument(c *DocumentContext)
 
-	// EnterDescription is called when entering the description production.
-	EnterDescription(c *DescriptionContext)
-
 	// EnterTypeSystemDefinition is called when entering the typeSystemDefinition production.
 	EnterTypeSystemDefinition(c *TypeSystemDefinitionContext)
 
+	// EnterTypeSystemExtension is called when entering the typeSystemExtension production.
+	EnterTypeSystemExtension(c *TypeSystemExtensionContext)
+
 	// EnterSchemaDefinition is called when entering the schemaDefinition production.
 	EnterSchemaDefinition(c *SchemaDefinitionContext)
+
+	// EnterSchemaExtension is called when entering the schemaExtension production.
+	EnterSchemaExtension(c *SchemaExtensionContext)
 
 	// EnterOperationTypeDefinition is called when entering the operationTypeDefinition production.
 	EnterOperationTypeDefinition(c *OperationTypeDefinitionContext)
@@ -129,6 +138,9 @@ type GraphqlListener interface {
 
 	// EnterTypeExtension is called when entering the typeExtension production.
 	EnterTypeExtension(c *TypeExtensionContext)
+
+	// EnterEmptyParentheses is called when entering the emptyParentheses production.
+	EnterEmptyParentheses(c *EmptyParenthesesContext)
 
 	// EnterScalarTypeDefinition is called when entering the scalarTypeDefinition production.
 	EnterScalarTypeDefinition(c *ScalarTypeDefinitionContext)
@@ -147,6 +159,9 @@ type GraphqlListener interface {
 
 	// EnterFieldsDefinition is called when entering the fieldsDefinition production.
 	EnterFieldsDefinition(c *FieldsDefinitionContext)
+
+	// EnterExtensionFieldsDefinition is called when entering the extensionFieldsDefinition production.
+	EnterExtensionFieldsDefinition(c *ExtensionFieldsDefinitionContext)
 
 	// EnterFieldDefinition is called when entering the fieldDefinition production.
 	EnterFieldDefinition(c *FieldDefinitionContext)
@@ -184,6 +199,9 @@ type GraphqlListener interface {
 	// EnterEnumValueDefinitions is called when entering the enumValueDefinitions production.
 	EnterEnumValueDefinitions(c *EnumValueDefinitionsContext)
 
+	// EnterExtensionEnumValueDefinitions is called when entering the extensionEnumValueDefinitions production.
+	EnterExtensionEnumValueDefinitions(c *ExtensionEnumValueDefinitionsContext)
+
 	// EnterEnumValueDefinition is called when entering the enumValueDefinition production.
 	EnterEnumValueDefinition(c *EnumValueDefinitionContext)
 
@@ -195,6 +213,9 @@ type GraphqlListener interface {
 
 	// EnterInputObjectValueDefinitions is called when entering the inputObjectValueDefinitions production.
 	EnterInputObjectValueDefinitions(c *InputObjectValueDefinitionsContext)
+
+	// EnterExtensionInputObjectValueDefinitions is called when entering the extensionInputObjectValueDefinitions production.
+	EnterExtensionInputObjectValueDefinitions(c *ExtensionInputObjectValueDefinitionsContext)
 
 	// EnterDirectiveDefinition is called when entering the directiveDefinition production.
 	EnterDirectiveDefinition(c *DirectiveDefinitionContext)
@@ -232,6 +253,9 @@ type GraphqlListener interface {
 	// ExitOperationType is called when exiting the operationType production.
 	ExitOperationType(c *OperationTypeContext)
 
+	// ExitDescription is called when exiting the description production.
+	ExitDescription(c *DescriptionContext)
+
 	// ExitEnumValue is called when exiting the enumValue production.
 	ExitEnumValue(c *EnumValueContext)
 
@@ -265,6 +289,15 @@ type GraphqlListener interface {
 	// ExitArgument is called when exiting the argument production.
 	ExitArgument(c *ArgumentContext)
 
+	// ExitBaseName is called when exiting the baseName production.
+	ExitBaseName(c *BaseNameContext)
+
+	// ExitFragmentName is called when exiting the fragmentName production.
+	ExitFragmentName(c *FragmentNameContext)
+
+	// ExitEnumValueName is called when exiting the enumValueName production.
+	ExitEnumValueName(c *EnumValueNameContext)
+
 	// ExitName is called when exiting the name production.
 	ExitName(c *NameContext)
 
@@ -279,9 +312,6 @@ type GraphqlListener interface {
 
 	// ExitDefaultValue is called when exiting the defaultValue production.
 	ExitDefaultValue(c *DefaultValueContext)
-
-	// ExitStringValue is called when exiting the stringValue production.
-	ExitStringValue(c *StringValueContext)
 
 	// ExitGqlType is called when exiting the gqlType production.
 	ExitGqlType(c *GqlTypeContext)
@@ -325,23 +355,23 @@ type GraphqlListener interface {
 	// ExitFragmentDefinition is called when exiting the fragmentDefinition production.
 	ExitFragmentDefinition(c *FragmentDefinitionContext)
 
-	// ExitFragmentName is called when exiting the fragmentName production.
-	ExitFragmentName(c *FragmentNameContext)
-
 	// ExitTypeCondition is called when exiting the typeCondition production.
 	ExitTypeCondition(c *TypeConditionContext)
 
 	// ExitDocument is called when exiting the document production.
 	ExitDocument(c *DocumentContext)
 
-	// ExitDescription is called when exiting the description production.
-	ExitDescription(c *DescriptionContext)
-
 	// ExitTypeSystemDefinition is called when exiting the typeSystemDefinition production.
 	ExitTypeSystemDefinition(c *TypeSystemDefinitionContext)
 
+	// ExitTypeSystemExtension is called when exiting the typeSystemExtension production.
+	ExitTypeSystemExtension(c *TypeSystemExtensionContext)
+
 	// ExitSchemaDefinition is called when exiting the schemaDefinition production.
 	ExitSchemaDefinition(c *SchemaDefinitionContext)
+
+	// ExitSchemaExtension is called when exiting the schemaExtension production.
+	ExitSchemaExtension(c *SchemaExtensionContext)
 
 	// ExitOperationTypeDefinition is called when exiting the operationTypeDefinition production.
 	ExitOperationTypeDefinition(c *OperationTypeDefinitionContext)
@@ -351,6 +381,9 @@ type GraphqlListener interface {
 
 	// ExitTypeExtension is called when exiting the typeExtension production.
 	ExitTypeExtension(c *TypeExtensionContext)
+
+	// ExitEmptyParentheses is called when exiting the emptyParentheses production.
+	ExitEmptyParentheses(c *EmptyParenthesesContext)
 
 	// ExitScalarTypeDefinition is called when exiting the scalarTypeDefinition production.
 	ExitScalarTypeDefinition(c *ScalarTypeDefinitionContext)
@@ -369,6 +402,9 @@ type GraphqlListener interface {
 
 	// ExitFieldsDefinition is called when exiting the fieldsDefinition production.
 	ExitFieldsDefinition(c *FieldsDefinitionContext)
+
+	// ExitExtensionFieldsDefinition is called when exiting the extensionFieldsDefinition production.
+	ExitExtensionFieldsDefinition(c *ExtensionFieldsDefinitionContext)
 
 	// ExitFieldDefinition is called when exiting the fieldDefinition production.
 	ExitFieldDefinition(c *FieldDefinitionContext)
@@ -406,6 +442,9 @@ type GraphqlListener interface {
 	// ExitEnumValueDefinitions is called when exiting the enumValueDefinitions production.
 	ExitEnumValueDefinitions(c *EnumValueDefinitionsContext)
 
+	// ExitExtensionEnumValueDefinitions is called when exiting the extensionEnumValueDefinitions production.
+	ExitExtensionEnumValueDefinitions(c *ExtensionEnumValueDefinitionsContext)
+
 	// ExitEnumValueDefinition is called when exiting the enumValueDefinition production.
 	ExitEnumValueDefinition(c *EnumValueDefinitionContext)
 
@@ -417,6 +456,9 @@ type GraphqlListener interface {
 
 	// ExitInputObjectValueDefinitions is called when exiting the inputObjectValueDefinitions production.
 	ExitInputObjectValueDefinitions(c *InputObjectValueDefinitionsContext)
+
+	// ExitExtensionInputObjectValueDefinitions is called when exiting the extensionInputObjectValueDefinitions production.
+	ExitExtensionInputObjectValueDefinitions(c *ExtensionInputObjectValueDefinitionsContext)
 
 	// ExitDirectiveDefinition is called when exiting the directiveDefinition production.
 	ExitDirectiveDefinition(c *DirectiveDefinitionContext)

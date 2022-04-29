@@ -18,9 +18,9 @@ import "io"
 
 type Directives []*Directive
 
-func (v Directives) MarshallGraphQL(w io.Writer) error {
+func (v Directives) MarshalGraphQL(w io.Writer) error {
 	for _, d := range v {
-		if err := d.MarshallGraphQL(w); err != nil {
+		if err := d.MarshalGraphQL(w); err != nil {
 			return err
 		}
 	}
@@ -33,7 +33,7 @@ type Directive struct {
 	Arguments Arguments
 }
 
-func (v *Directive) MarshallGraphQL(w io.Writer) error {
+func (v *Directive) MarshalGraphQL(w io.Writer) error {
 	if _, err := w.Write([]byte(" @")); err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (v *Directive) MarshallGraphQL(w io.Writer) error {
 		return err
 	}
 
-	if err := v.Arguments.MarshallGraphQL(w); err != nil {
+	if err := v.Arguments.MarshalGraphQL(w); err != nil {
 		return err
 	}
 	return nil

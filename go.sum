@@ -1,5 +1,5 @@
-github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210930093333-01de314d7883 h1:BW7yRyTdwK1X0ct2OFNr8HLgZBp98nY+El57KZfDHYo=
-github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210930093333-01de314d7883/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
+github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220422191845-ae1f3f182a20 h1:QMQotpvJUQ0qecrv+ENGAcnQZdUGAeIO59Pr9WNpATM=
+github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220422191845-ae1f3f182a20/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
 github.com/codemodus/kace v0.5.1 h1:4OCsBlE2c/rSJo375ggfnucv9eRzge/U5LrrOZd47HA=
 github.com/codemodus/kace v0.5.1/go.mod h1:coddaHoX1ku1YFSe4Ip0mL9kQjJvKkzb9CfIdG1YR04=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=

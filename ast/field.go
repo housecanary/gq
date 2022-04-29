@@ -26,7 +26,7 @@ type Field struct {
 	SelectionSet SelectionSet
 }
 
-func (v *Field) MarshallGraphQL(w io.Writer) error {
+func (v *Field) MarshalGraphQL(w io.Writer) error {
 	if v.Alias != v.Name {
 		if _, err := w.Write([]byte(v.Alias)); err != nil {
 			return err
@@ -40,16 +40,16 @@ func (v *Field) MarshallGraphQL(w io.Writer) error {
 		return err
 	}
 
-	if err := v.Arguments.MarshallGraphQL(w); err != nil {
+	if err := v.Arguments.MarshalGraphQL(w); err != nil {
 		return err
 	}
 
-	if err := v.Directives.MarshallGraphQL(w); err != nil {
+	if err := v.Directives.MarshalGraphQL(w); err != nil {
 		return err
 	}
 
 	if len(v.SelectionSet) > 0 {
-		if err := v.SelectionSet.MarshallGraphQL(w); err != nil {
+		if err := v.SelectionSet.MarshalGraphQL(w); err != nil {
 			return err
 		}
 	}

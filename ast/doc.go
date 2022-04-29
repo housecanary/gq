@@ -18,6 +18,6 @@
 // any time, or renamed/moved.
 //
 // Design notes: this package should consist of simple structs, and perhaps
-// some marshalling code.  No business logic, should just be storage of a parsed
+// some marshaling code.  No business logic, should just be storage of a parsed
 // document
 package ast

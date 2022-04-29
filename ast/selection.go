@@ -22,7 +22,7 @@ import (
 
 type SelectionSet []Selection
 
-func (v SelectionSet) MarshallGraphQL(w io.Writer) error {
+func (v SelectionSet) MarshalGraphQL(w io.Writer) error {
 	if _, err := w.Write([]byte(" {")); err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func (v SelectionSet) MarshallGraphQL(w io.Writer) error {
 			return err
 		}
 
-		if err := sel.MarshallGraphQL(iw); err != nil {
+		if err := sel.MarshalGraphQL(iw); err != nil {
 			return err
 		}
 	}
@@ -46,15 +46,15 @@ func (v SelectionSet) MarshallGraphQL(w io.Writer) error {
 }
 
 type Selection interface {
-	GraphQLMarshaller
+	GraphQLMarshaler
 }
 
 type FieldSelection struct {
 	Field Field
 }
 
-func (v *FieldSelection) MarshallGraphQL(w io.Writer) error {
-	return v.Field.MarshallGraphQL(w)
+func (v *FieldSelection) MarshalGraphQL(w io.Writer) error {
+	return v.Field.MarshalGraphQL(w)
 }
 
 type FragmentSpreadSelection struct {
@@ -62,7 +62,7 @@ type FragmentSpreadSelection struct {
 	Directives   Directives
 }
 
-func (v *FragmentSpreadSelection) MarshallGraphQL(w io.Writer) error {
+func (v *FragmentSpreadSelection) MarshalGraphQL(w io.Writer) error {
 	if _, err := w.Write([]byte("...")); err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (v *FragmentSpreadSelection) MarshallGraphQL(w io.Writer) error {
 		return err
 	}
 
-	if err := v.Directives.MarshallGraphQL(w); err != nil {
+	if err := v.Directives.MarshalGraphQL(w); err != nil {
 		return err
 	}
 	return nil
@@ -83,7 +83,7 @@ type InlineFragmentSelection struct {
 	SelectionSet SelectionSet
 }
 
-func (v *InlineFragmentSelection) MarshallGraphQL(w io.Writer) error {
+func (v *InlineFragmentSelection) MarshalGraphQL(w io.Writer) error {
 	if _, err := w.Write([]byte("... on ")); err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (v *InlineFragmentSelection) MarshallGraphQL(w io.Writer) error {
 		return err
 	}
 
-	if err := v.SelectionSet.MarshallGraphQL(w); err != nil {
+	if err := v.SelectionSet.MarshalGraphQL(w); err != nil {
 		return err
 	}
 	return nil

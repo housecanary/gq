@@ -18,6 +18,6 @@ import (
 	"io"
 )
 
-type GraphQLMarshaller interface {
-	MarshallGraphQL(io.Writer) error
+type GraphQLMarshaler interface {
+	MarshalGraphQL(io.Writer) error
 }

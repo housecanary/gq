@@ -28,7 +28,7 @@ type BaseASTBuilderVisitor struct {
 }
 
 func (v *BaseASTBuilderVisitor) VisitEnumValue(ctx *gen.EnumValueContext) interface{} {
-	s := ctx.Name().Accept(v).(string)
+	s := ctx.EnumValueName().Accept(v).(string)
 	return ast.EnumValue{V: s}
 }
 
@@ -133,9 +133,13 @@ func (v *BaseASTBuilderVisitor) VisitName(ctx *gen.NameContext) interface{} {
 	return ctx.GetText()
 }
 
+func (v *BaseASTBuilderVisitor) VisitEnumValueName(ctx *gen.EnumValueNameContext) interface{} {
+	return ctx.GetText()
+}
+
 func (v *BaseASTBuilderVisitor) VisitValue(ctx *gen.ValueContext) interface{} {
 	if c := ctx.StringValue(); c != nil {
-		return c.Accept(v).(ast.StringValue)
+		return ast.StringValue{V: parseString(c.GetText())}
 	}
 
 	if c := ctx.IntValue(); c != nil {
@@ -192,7 +196,7 @@ func (v *BaseASTBuilderVisitor) VisitValueWithVariable(ctx *gen.ValueWithVariabl
 	}
 
 	if c := ctx.StringValue(); c != nil {
-		return c.Accept(v).(ast.StringValue)
+		return ast.StringValue{V: parseString(c.GetText())}
 	}
 
 	if c := ctx.IntValue(); c != nil {
@@ -248,17 +252,6 @@ func (v *BaseASTBuilderVisitor) VisitVariable(ctx *gen.VariableContext) interfac
 
 func (v *BaseASTBuilderVisitor) VisitDefaultValue(ctx *gen.DefaultValueContext) interface{} {
 	return ctx.Value().Accept(v)
-}
-
-func (v *BaseASTBuilderVisitor) VisitStringValue(ctx *gen.StringValueContext) interface{} {
-	if c := ctx.TripleQuotedStringValue(); c != nil {
-		s := c.GetText()
-		return ast.StringValue{V: s[3 : len(s)-3]}
-	} else if c := ctx.StringValue(); c != nil {
-		s := c.GetText()
-		return ast.StringValue{V: s[1 : len(s)-1]}
-	}
-	panic("Invalid string value")
 }
 
 func (v *BaseASTBuilderVisitor) VisitGqlType(ctx *gen.GqlTypeContext) interface{} {

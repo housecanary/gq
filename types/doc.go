@@ -14,7 +14,7 @@
 
 // Package types provides implementations of all GraphQL built in types.
 //
-// As a convenience, the types in this package are Scannable from SQL and Unmarshallable
+// As a convenience, the types in this package are Scannable from SQL and Unmarshalable
 // from JSON (as well as providing fast unmarhshalling via jsoniter) so that they can be
 // used to directly map data from a database or JSON speaking service.
 package types

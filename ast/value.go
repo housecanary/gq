@@ -16,6 +16,7 @@ package ast
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -31,7 +32,48 @@ type StringValue struct {
 func (StringValue) isValue() {}
 
 func (v StringValue) Representation() string {
-	return fmt.Sprintf("\"%s\"", v.V)
+	s := v.V
+	sb := strings.Builder{}
+	sb.Grow(len(s) + 2)
+	sb.WriteByte('"')
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c < ' ' || c == '\\' || c == '"' {
+			switch c {
+			case '\\', '"':
+				sb.WriteByte('\\')
+				sb.WriteByte(c)
+			case '\b':
+				sb.WriteByte('\\')
+				sb.WriteByte('b')
+			case '\f':
+				sb.WriteByte('\\')
+				sb.WriteByte('f')
+			case '\n':
+				sb.WriteByte('\\')
+				sb.WriteByte('n')
+			case '\r':
+				sb.WriteByte('\\')
+				sb.WriteByte('r')
+			case '\t':
+				sb.WriteByte('\t')
+			default:
+				sb.WriteByte('\\')
+				sb.WriteByte('u')
+				formatted := strconv.FormatUint(uint64(c), 16)
+				for i := 0; i < 4-len(formatted); i++ {
+					sb.WriteByte('0')
+				}
+				for i := 0; i < len(formatted); i++ {
+					sb.WriteByte(formatted[i])
+				}
+			}
+		} else {
+			sb.WriteByte(c)
+		}
+	}
+	sb.WriteByte('"')
+	return sb.String()
 }
 
 var _ Value = (*StringValue)(nil)

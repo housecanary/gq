@@ -1,4 +1,4 @@
-// Code generated from grammar/Graphql.g4 by ANTLR 4.9.2. DO NOT EDIT.
+// Code generated from /Users/mpoindexter/dev/gq/grammar/Graphql.g4 by ANTLR 4.10.1. DO NOT EDIT.
 
 package gen // Graphql
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -25,6 +25,12 @@ func (s *BaseGraphqlListener) EnterOperationType(ctx *OperationTypeContext) {}
 
 // ExitOperationType is called when production operationType is exited.
 func (s *BaseGraphqlListener) ExitOperationType(ctx *OperationTypeContext) {}
+
+// EnterDescription is called when production description is entered.
+func (s *BaseGraphqlListener) EnterDescription(ctx *DescriptionContext) {}
+
+// ExitDescription is called when production description is exited.
+func (s *BaseGraphqlListener) ExitDescription(ctx *DescriptionContext) {}
 
 // EnterEnumValue is called when production enumValue is entered.
 func (s *BaseGraphqlListener) EnterEnumValue(ctx *EnumValueContext) {}
@@ -92,6 +98,24 @@ func (s *BaseGraphqlListener) EnterArgument(ctx *ArgumentContext) {}
 // ExitArgument is called when production argument is exited.
 func (s *BaseGraphqlListener) ExitArgument(ctx *ArgumentContext) {}
 
+// EnterBaseName is called when production baseName is entered.
+func (s *BaseGraphqlListener) EnterBaseName(ctx *BaseNameContext) {}
+
+// ExitBaseName is called when production baseName is exited.
+func (s *BaseGraphqlListener) ExitBaseName(ctx *BaseNameContext) {}
+
+// EnterFragmentName is called when production fragmentName is entered.
+func (s *BaseGraphqlListener) EnterFragmentName(ctx *FragmentNameContext) {}
+
+// ExitFragmentName is called when production fragmentName is exited.
+func (s *BaseGraphqlListener) ExitFragmentName(ctx *FragmentNameContext) {}
+
+// EnterEnumValueName is called when production enumValueName is entered.
+func (s *BaseGraphqlListener) EnterEnumValueName(ctx *EnumValueNameContext) {}
+
+// ExitEnumValueName is called when production enumValueName is exited.
+func (s *BaseGraphqlListener) ExitEnumValueName(ctx *EnumValueNameContext) {}
+
 // EnterName is called when production name is entered.
 func (s *BaseGraphqlListener) EnterName(ctx *NameContext) {}
 
@@ -121,12 +145,6 @@ func (s *BaseGraphqlListener) EnterDefaultValue(ctx *DefaultValueContext) {}
 
 // ExitDefaultValue is called when production defaultValue is exited.
 func (s *BaseGraphqlListener) ExitDefaultValue(ctx *DefaultValueContext) {}
-
-// EnterStringValue is called when production stringValue is entered.
-func (s *BaseGraphqlListener) EnterStringValue(ctx *StringValueContext) {}
-
-// ExitStringValue is called when production stringValue is exited.
-func (s *BaseGraphqlListener) ExitStringValue(ctx *StringValueContext) {}
 
 // EnterGqlType is called when production gqlType is entered.
 func (s *BaseGraphqlListener) EnterGqlType(ctx *GqlTypeContext) {}
@@ -212,12 +230,6 @@ func (s *BaseGraphqlListener) EnterFragmentDefinition(ctx *FragmentDefinitionCon
 // ExitFragmentDefinition is called when production fragmentDefinition is exited.
 func (s *BaseGraphqlListener) ExitFragmentDefinition(ctx *FragmentDefinitionContext) {}
 
-// EnterFragmentName is called when production fragmentName is entered.
-func (s *BaseGraphqlListener) EnterFragmentName(ctx *FragmentNameContext) {}
-
-// ExitFragmentName is called when production fragmentName is exited.
-func (s *BaseGraphqlListener) ExitFragmentName(ctx *FragmentNameContext) {}
-
 // EnterTypeCondition is called when production typeCondition is entered.
 func (s *BaseGraphqlListener) EnterTypeCondition(ctx *TypeConditionContext) {}
 
@@ -230,23 +242,29 @@ func (s *BaseGraphqlListener) EnterDocument(ctx *DocumentContext) {}
 // ExitDocument is called when production document is exited.
 func (s *BaseGraphqlListener) ExitDocument(ctx *DocumentContext) {}
 
-// EnterDescription is called when production description is entered.
-func (s *BaseGraphqlListener) EnterDescription(ctx *DescriptionContext) {}
-
-// ExitDescription is called when production description is exited.
-func (s *BaseGraphqlListener) ExitDescription(ctx *DescriptionContext) {}
-
 // EnterTypeSystemDefinition is called when production typeSystemDefinition is entered.
 func (s *BaseGraphqlListener) EnterTypeSystemDefinition(ctx *TypeSystemDefinitionContext) {}
 
 // ExitTypeSystemDefinition is called when production typeSystemDefinition is exited.
 func (s *BaseGraphqlListener) ExitTypeSystemDefinition(ctx *TypeSystemDefinitionContext) {}
 
+// EnterTypeSystemExtension is called when production typeSystemExtension is entered.
+func (s *BaseGraphqlListener) EnterTypeSystemExtension(ctx *TypeSystemExtensionContext) {}
+
+// ExitTypeSystemExtension is called when production typeSystemExtension is exited.
+func (s *BaseGraphqlListener) ExitTypeSystemExtension(ctx *TypeSystemExtensionContext) {}
+
 // EnterSchemaDefinition is called when production schemaDefinition is entered.
 func (s *BaseGraphqlListener) EnterSchemaDefinition(ctx *SchemaDefinitionContext) {}
 
 // ExitSchemaDefinition is called when production schemaDefinition is exited.
 func (s *BaseGraphqlListener) ExitSchemaDefinition(ctx *SchemaDefinitionContext) {}
+
+// EnterSchemaExtension is called when production schemaExtension is entered.
+func (s *BaseGraphqlListener) EnterSchemaExtension(ctx *SchemaExtensionContext) {}
+
+// ExitSchemaExtension is called when production schemaExtension is exited.
+func (s *BaseGraphqlListener) ExitSchemaExtension(ctx *SchemaExtensionContext) {}
 
 // EnterOperationTypeDefinition is called when production operationTypeDefinition is entered.
 func (s *BaseGraphqlListener) EnterOperationTypeDefinition(ctx *OperationTypeDefinitionContext) {}
@@ -265,6 +283,12 @@ func (s *BaseGraphqlListener) EnterTypeExtension(ctx *TypeExtensionContext) {}
 
 // ExitTypeExtension is called when production typeExtension is exited.
 func (s *BaseGraphqlListener) ExitTypeExtension(ctx *TypeExtensionContext) {}
+
+// EnterEmptyParentheses is called when production emptyParentheses is entered.
+func (s *BaseGraphqlListener) EnterEmptyParentheses(ctx *EmptyParenthesesContext) {}
+
+// ExitEmptyParentheses is called when production emptyParentheses is exited.
+func (s *BaseGraphqlListener) ExitEmptyParentheses(ctx *EmptyParenthesesContext) {}
 
 // EnterScalarTypeDefinition is called when production scalarTypeDefinition is entered.
 func (s *BaseGraphqlListener) EnterScalarTypeDefinition(ctx *ScalarTypeDefinitionContext) {}
@@ -305,6 +329,12 @@ func (s *BaseGraphqlListener) EnterFieldsDefinition(ctx *FieldsDefinitionContext
 
 // ExitFieldsDefinition is called when production fieldsDefinition is exited.
 func (s *BaseGraphqlListener) ExitFieldsDefinition(ctx *FieldsDefinitionContext) {}
+
+// EnterExtensionFieldsDefinition is called when production extensionFieldsDefinition is entered.
+func (s *BaseGraphqlListener) EnterExtensionFieldsDefinition(ctx *ExtensionFieldsDefinitionContext) {}
+
+// ExitExtensionFieldsDefinition is called when production extensionFieldsDefinition is exited.
+func (s *BaseGraphqlListener) ExitExtensionFieldsDefinition(ctx *ExtensionFieldsDefinitionContext) {}
 
 // EnterFieldDefinition is called when production fieldDefinition is entered.
 func (s *BaseGraphqlListener) EnterFieldDefinition(ctx *FieldDefinitionContext) {}
@@ -384,6 +414,14 @@ func (s *BaseGraphqlListener) EnterEnumValueDefinitions(ctx *EnumValueDefinition
 // ExitEnumValueDefinitions is called when production enumValueDefinitions is exited.
 func (s *BaseGraphqlListener) ExitEnumValueDefinitions(ctx *EnumValueDefinitionsContext) {}
 
+// EnterExtensionEnumValueDefinitions is called when production extensionEnumValueDefinitions is entered.
+func (s *BaseGraphqlListener) EnterExtensionEnumValueDefinitions(ctx *ExtensionEnumValueDefinitionsContext) {
+}
+
+// ExitExtensionEnumValueDefinitions is called when production extensionEnumValueDefinitions is exited.
+func (s *BaseGraphqlListener) ExitExtensionEnumValueDefinitions(ctx *ExtensionEnumValueDefinitionsContext) {
+}
+
 // EnterEnumValueDefinition is called when production enumValueDefinition is entered.
 func (s *BaseGraphqlListener) EnterEnumValueDefinition(ctx *EnumValueDefinitionContext) {}
 
@@ -410,6 +448,14 @@ func (s *BaseGraphqlListener) EnterInputObjectValueDefinitions(ctx *InputObjectV
 
 // ExitInputObjectValueDefinitions is called when production inputObjectValueDefinitions is exited.
 func (s *BaseGraphqlListener) ExitInputObjectValueDefinitions(ctx *InputObjectValueDefinitionsContext) {
+}
+
+// EnterExtensionInputObjectValueDefinitions is called when production extensionInputObjectValueDefinitions is entered.
+func (s *BaseGraphqlListener) EnterExtensionInputObjectValueDefinitions(ctx *ExtensionInputObjectValueDefinitionsContext) {
+}
+
+// ExitExtensionInputObjectValueDefinitions is called when production extensionInputObjectValueDefinitions is exited.
+func (s *BaseGraphqlListener) ExitExtensionInputObjectValueDefinitions(ctx *ExtensionInputObjectValueDefinitionsContext) {
 }
 
 // EnterDirectiveDefinition is called when production directiveDefinition is entered.

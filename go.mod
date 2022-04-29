@@ -3,7 +3,7 @@ module github.com/housecanary/gq
 go 1.17
 
 require (
-	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210930093333-01de314d7883
+	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220422191845-ae1f3f182a20
 	github.com/codemodus/kace v0.5.1
 	github.com/dave/jennifer v1.4.1
 	github.com/davecgh/go-spew v1.1.1

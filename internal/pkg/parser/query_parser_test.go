@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/housecanary/gq/ast"
 )
 
 func TestParseSimple(t *testing.T) {
@@ -32,7 +33,7 @@ func TestParseSimple(t *testing.T) {
 	}
 
 	buf := &bytes.Buffer{}
-	doc.MarshallGraphQL(buf)
+	doc.MarshalGraphQL(buf)
 	if buf.String() != expected {
 		spew.Dump(doc)
 		t.Errorf("Got: \n%q\n expected:\n%q", buf.String(), expected)
@@ -55,8 +56,8 @@ func BenchmarkParseSimple(b *testing.B) {
 }
 
 func TestParseArgs(t *testing.T) {
-	body := `query($a: Int, $b: String = "a"){foo}`
-	expected := `query($a: Int, $b: String = "a") {
+	body := `query($a: Int, $b: String = "a" @dir){foo}`
+	expected := `query($a: Int, $b: String = "a" @dir) {
   foo
 }`
 	doc, err := ParseQuery(body)
@@ -65,7 +66,7 @@ func TestParseArgs(t *testing.T) {
 	}
 
 	buf := &bytes.Buffer{}
-	doc.MarshallGraphQL(buf)
+	doc.MarshalGraphQL(buf)
 	if buf.String() != expected {
 		spew.Dump(doc)
 		t.Errorf("Got: \n%q\n expected:\n%q", buf.String(), expected)
@@ -86,9 +87,34 @@ func TestParseInlineFragment(t *testing.T) {
 	}
 
 	buf := &bytes.Buffer{}
-	doc.MarshallGraphQL(buf)
+	doc.MarshalGraphQL(buf)
 	if buf.String() != expected {
 		spew.Dump(doc)
 		t.Errorf("Got: \n%q\n expected:\n%q", buf.String(), expected)
+	}
+}
+
+func TestParseEscapedString(t *testing.T) {
+	body := `query{foo(a: "\"value\"")}`
+	expected := `query {
+  foo(a: "\"value\"")
+}`
+	doc, err := ParseQuery(body)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	buf := &bytes.Buffer{}
+	doc.MarshalGraphQL(buf)
+	if buf.String() != expected {
+		spew.Dump(doc)
+		t.Errorf("Got: \n%q\n expected:\n%q", buf.String(), expected)
+	}
+
+	fs := doc.OperationDefinitions[0].SelectionSet[0].(*ast.FieldSelection)
+	arg := fs.Field.Arguments[0]
+	s := arg.Value.(ast.StringValue).V
+	if s != "\"value\"" {
+		t.Errorf("expected \"value\" got %s", s)
 	}
 }

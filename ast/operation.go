@@ -35,7 +35,7 @@ type OperationDefinition struct {
 	SelectionSet        SelectionSet
 }
 
-func (o *OperationDefinition) MarshallGraphQL(w io.Writer) error {
+func (o *OperationDefinition) MarshalGraphQL(w io.Writer) error {
 	lenName := len(o.Name)
 	if lenName > 0 {
 		lenName++
@@ -43,15 +43,15 @@ func (o *OperationDefinition) MarshallGraphQL(w io.Writer) error {
 	if _, err := w.Write([]byte(fmt.Sprintf(`%s%*s`, o.OperationType, lenName, o.Name))); err != nil {
 		return err
 	}
-	if err := o.VariableDefinitions.MarshallGraphQL(w); err != nil {
+	if err := o.VariableDefinitions.MarshalGraphQL(w); err != nil {
 		return err
 	}
 
-	if err := o.Directives.MarshallGraphQL(w); err != nil {
+	if err := o.Directives.MarshalGraphQL(w); err != nil {
 		return err
 	}
 
-	if err := o.SelectionSet.MarshallGraphQL(w); err != nil {
+	if err := o.SelectionSet.MarshalGraphQL(w); err != nil {
 		return err
 	}
 	return nil
