@@ -31,7 +31,7 @@ func buildScalarSelector(cc *compileContext, typ *schema.ScalarType, selections 
 	return scalarSelector{Type: typ, defaultSelector: cc.newDefaultSelector()}, nil
 }
 
-func (s scalarSelector) apply(ctx exeContext, value interface{}, collector collector) contFunc {
+func (s scalarSelector) apply(ctx *exeContext, value interface{}, collector collector) contFunc {
 	if value == nil {
 		return nil
 	}

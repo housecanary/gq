@@ -36,12 +36,12 @@ func buildListSelector(cc *compileContext, typ *schema.ListType, selections ast.
 	return listSelector{ElementSelector: elementSelector, defaultSelector: cc.newDefaultSelector()}, nil
 }
 
-func (s listSelector) apply(ctx exeContext, value interface{}, collector collector) contFunc {
+func (s listSelector) apply(ctx *exeContext, value interface{}, collector collector) contFunc {
 	if value == nil {
 		return nil
 	}
 
-	var deferred worklist
+	var deferred []contFunc
 	lv, ok := value.(schema.ListValue)
 	if !ok {
 		err := fmt.Errorf("Value %v is not a list value", value)
@@ -53,12 +53,15 @@ func (s listSelector) apply(ctx exeContext, value interface{}, collector collect
 	valueCollector := collector.Array(lv.Len())
 	lv.ForEachElement(func(item interface{}) {
 		elementCollector := valueCollector.Item()
-		s.ElementSelector.prepareCollector(elementCollector)
-		deferred.Add(s.ElementSelector.apply(ctx, item, elementCollector))
+		cf := s.ElementSelector.apply(ctx, item, elementCollector)
+		if cf != nil {
+			deferred = append(deferred, cf)
+		}
 	})
 
 	if len(deferred) > 0 {
-		return deferred.Continue
+		wl := worklist(deferred)
+		return wl.Continue
 	}
 
 	return nil

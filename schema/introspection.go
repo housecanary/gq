@@ -453,7 +453,7 @@ var introspectionInputValueType = &ObjectType{
 				case *ArgumentDescriptor:
 					return makeIntrospectionDefaultValue(t.defaultValue, t.typ), nil
 				case *InputObjectFieldDescriptor:
-					return makeIntrospectionDefaultValue(t.defaultValue, t.typ), nil
+					return makeIntrospectionDefaultValue(t.defaultValueAst, t.typ), nil
 				}
 				panic("Unknown input value type")
 			}),

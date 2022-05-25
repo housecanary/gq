@@ -52,7 +52,7 @@ func buildUnionSelector(cc *compileContext, typ *schema.UnionType, selections as
 	return unionSelector{Elements: elements, Type: typ, defaultSelector: cc.newDefaultSelector()}, nil
 }
 
-func (s unionSelector) apply(ctx exeContext, value interface{}, collector collector) contFunc {
+func (s unionSelector) apply(ctx *exeContext, value interface{}, collector collector) contFunc {
 	if value == nil {
 		return nil
 	}

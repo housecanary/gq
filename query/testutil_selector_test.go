@@ -15,17 +15,14 @@
 package query
 
 type dummySelector struct {
-	PrepareCollector func(collector collector)
-	Apply            func(ctx exeContext, value interface{}, collector collector) contFunc
+	Apply func(ctx *exeContext, value interface{}, collector collector) contFunc
 }
 
-func (s dummySelector) prepareCollector(collector collector) {
-	if s.PrepareCollector != nil {
-		s.PrepareCollector(collector)
-	}
+func (s dummySelector) required() bool {
+	return false
 }
 
-func (s dummySelector) apply(ctx exeContext, value interface{}, collector collector) contFunc {
+func (s dummySelector) apply(ctx *exeContext, value interface{}, collector collector) contFunc {
 	if s.Apply != nil {
 		return s.Apply(ctx, value, collector)
 	}

@@ -24,8 +24,9 @@ import (
 
 type exeContext struct {
 	context.Context
-	listener  ExecutionListener
-	variables Variables
+	listener     ExecutionListener
+	variables    Variables
+	currentField *objectSelectorField
 }
 
 // A contFunc represents remaining work that a selector needs to perform.
@@ -71,16 +72,12 @@ func (w *worklist) Continue() contFunc {
 // Selectors are responsible for extracting the data specified by a query
 // Selection Set from an input value, and providing the results to a collector.
 type selector interface {
-	prepareCollector(collector collector)
-	apply(ctx exeContext, value interface{}, collector collector) contFunc
+	apply(ctx *exeContext, value interface{}, collector collector) contFunc
 }
 
 type defaultSelector struct {
 	row int
 	col int
-}
-
-func (defaultSelector) prepareCollector(collector collector) {
 }
 
 // buildSelector builds a selector for an input type and selection set.  If the query is invalid according

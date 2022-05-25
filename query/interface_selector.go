@@ -52,7 +52,7 @@ func buildInterfaceSelector(cc *compileContext, typ *schema.InterfaceType, selec
 	return interfaceSelector{Elements: elements, Type: typ, defaultSelector: cc.newDefaultSelector()}, nil
 }
 
-func (s interfaceSelector) apply(ctx exeContext, value interface{}, collector collector) contFunc {
+func (s interfaceSelector) apply(ctx *exeContext, value interface{}, collector collector) contFunc {
 	if value == nil {
 		return nil
 	}

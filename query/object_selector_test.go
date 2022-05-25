@@ -41,7 +41,7 @@ func TestObjectSelectorSimple(t *testing.T) {
 	schemaField := buildFieldDescriptor(stringResolver("Foo"))
 	os := &objectSelector{
 		Fields: []*objectSelectorField{
-			&objectSelectorField{
+			{
 				AstField: queryField,
 				Sel:      dummySelector{},
 				Field:    schemaField,
@@ -54,7 +54,7 @@ func TestObjectSelectorSimple(t *testing.T) {
 			resolveAssertion{queryField: queryField, schemaField: schemaField},
 		},
 	}
-	os.apply(exeContext{
+	os.apply(&exeContext{
 		listener: listener,
 	}, struct{}{}, col)
 	listener.assertDone()
@@ -67,7 +67,7 @@ func TestObjectSelectorSimpleSafe(t *testing.T) {
 	schemaField := buildFieldDescriptor(schema.MarkSafe(stringResolver("Foo")))
 	os := &objectSelector{
 		Fields: []*objectSelectorField{
-			&objectSelectorField{
+			{
 				AstField: queryField,
 				Sel:      dummySelector{},
 				Field:    schemaField,
@@ -80,7 +80,7 @@ func TestObjectSelectorSimpleSafe(t *testing.T) {
 			resolveAssertion{queryField: queryField, schemaField: schemaField},
 		},
 	}
-	os.apply(exeContext{
+	os.apply(&exeContext{
 		listener: listener,
 	}, struct{}{}, col)
 	listener.assertDone()
@@ -94,7 +94,7 @@ func TestObjectSelectorSimpleError(t *testing.T) {
 	schemaField := buildFieldDescriptor(errorResolver(err))
 	os := &objectSelector{
 		Fields: []*objectSelectorField{
-			&objectSelectorField{
+			{
 				AstField: queryField,
 				Sel:      dummySelector{},
 				Field:    schemaField,
@@ -108,7 +108,7 @@ func TestObjectSelectorSimpleError(t *testing.T) {
 			errorAssertion{err: err},
 		},
 	}
-	os.apply(exeContext{
+	os.apply(&exeContext{
 		listener: listener,
 	}, struct{}{}, col)
 	listener.assertDone()
@@ -122,7 +122,7 @@ func TestObjectSelectorSimplePanic(t *testing.T) {
 	schemaField := buildFieldDescriptor(panicResolver(err))
 	os := &objectSelector{
 		Fields: []*objectSelectorField{
-			&objectSelectorField{
+			{
 				AstField: queryField,
 				Sel:      dummySelector{},
 				Field:    schemaField,
@@ -136,7 +136,7 @@ func TestObjectSelectorSimplePanic(t *testing.T) {
 			errorAssertion{err: err},
 		},
 	}
-	os.apply(exeContext{
+	os.apply(&exeContext{
 		listener: listener,
 	}, struct{}{}, col)
 	listener.assertDone()
@@ -150,7 +150,7 @@ func TestObjectSelectorSimpleSafeError(t *testing.T) {
 	schemaField := buildFieldDescriptor(schema.MarkSafe(errorResolver(err)))
 	os := &objectSelector{
 		Fields: []*objectSelectorField{
-			&objectSelectorField{
+			{
 				AstField: queryField,
 				Sel:      dummySelector{},
 				Field:    schemaField,
@@ -164,7 +164,7 @@ func TestObjectSelectorSimpleSafeError(t *testing.T) {
 			errorAssertion{err: err},
 		},
 	}
-	os.apply(exeContext{
+	os.apply(&exeContext{
 		listener: listener,
 	}, struct{}{}, col)
 	listener.assertDone()
@@ -177,7 +177,7 @@ func TestObjectSelectorAsync(t *testing.T) {
 	schemaField := buildFieldDescriptor(asyncResolver(stringResolver("Foo")))
 	os := &objectSelector{
 		Fields: []*objectSelectorField{
-			&objectSelectorField{
+			{
 				AstField: queryField,
 				Sel:      dummySelector{},
 				Field:    schemaField,
@@ -190,7 +190,7 @@ func TestObjectSelectorAsync(t *testing.T) {
 			resolveAssertion{queryField: queryField, schemaField: schemaField},
 		},
 	}
-	cont := os.apply(exeContext{
+	cont := os.apply(&exeContext{
 		listener: listener,
 	}, struct{}{}, col)
 	cont()
@@ -205,7 +205,7 @@ func TestObjectSelectorAsyncErr(t *testing.T) {
 	schemaField := buildFieldDescriptor(asyncResolver(errorResolver(err)))
 	os := &objectSelector{
 		Fields: []*objectSelectorField{
-			&objectSelectorField{
+			{
 				AstField: queryField,
 				Sel:      dummySelector{},
 				Field:    schemaField,
@@ -219,7 +219,7 @@ func TestObjectSelectorAsyncErr(t *testing.T) {
 			errorAssertion{err: err},
 		},
 	}
-	cont := os.apply(exeContext{
+	cont := os.apply(&exeContext{
 		listener: listener,
 	}, struct{}{}, col)
 	cont()
@@ -234,7 +234,7 @@ func TestObjectSelectorAsyncPanic(t *testing.T) {
 	schemaField := buildFieldDescriptor(asyncResolver(panicResolver(err)))
 	os := &objectSelector{
 		Fields: []*objectSelectorField{
-			&objectSelectorField{
+			{
 				AstField: queryField,
 				Sel:      dummySelector{},
 				Field:    schemaField,
@@ -248,7 +248,7 @@ func TestObjectSelectorAsyncPanic(t *testing.T) {
 			errorAssertion{err: err},
 		},
 	}
-	cont := os.apply(exeContext{
+	cont := os.apply(&exeContext{
 		listener: listener,
 	}, struct{}{}, col)
 	cont()

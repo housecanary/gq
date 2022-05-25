@@ -34,7 +34,7 @@ type objectSelectorField struct {
 	AstField      *ast.Field
 	Sel           selector
 	Field         *schema.FieldDescriptor
-	ArgValues     map[string]ast.Value
+	ArgValues     map[string]interface{}
 	ArgResolvers  map[string]argumentResolver
 	DefaultValues map[string]schema.LiteralValue
 	Row           int
@@ -94,9 +94,14 @@ func (s *objectSelector) addField(cc *compileContext, typ *schema.ObjectType, as
 	if err != nil {
 		return err
 	}
-	argValues := make(map[string]ast.Value)
+	argValues := make(map[string]interface{})
 	for _, arg := range astField.Arguments {
-		argValues[arg.Name] = arg.Value
+		lv, converted := concreteAstValueToLiteralValue(arg.Value)
+		if converted {
+			argValues[arg.Name] = lv
+		} else {
+			argValues[arg.Name] = arg.Value
+		}
 	}
 	defaultValues := make(map[string]schema.LiteralValue)
 	for _, arg := range schemaField.Arguments() {
@@ -138,15 +143,14 @@ func maybeNotifyCb(v interface{}, err error, cb ResolveCompleteCallback) (interf
 	return v, err
 }
 
-func safeResolve(ctx exeContext, value interface{}, f *objectSelectorField, cb ResolveCompleteCallback) (fieldValue interface{}, err error) {
+func safeResolve(ctx *exeContext, value interface{}, f *objectSelectorField, cb ResolveCompleteCallback) (fieldValue interface{}, err error) {
+	prevField := ctx.currentField
+	ctx.currentField = f
+	defer func() { ctx.currentField = prevField }()
 	resolver := f.Field.Resolver()
-	var resolverContext context.Context = ctx
-	if resolver.NeedsFullContext() {
-		resolverContext = &resolverContextImpl{ctx, fieldWalker{f.Sel, f.AstField}, f}
-	}
 
 	if sr, ok := resolver.(schema.SafeResolver); ok {
-		fieldValue, err = sr.ResolveSafe(resolverContext, value)
+		fieldValue, err = sr.ResolveSafe(ctx, value)
 		fieldValue, err = maybeNotifyCb(fieldValue, err, cb)
 		if err != nil {
 			ctx.listener.NotifyError(err)
@@ -168,12 +172,12 @@ func safeResolve(ctx exeContext, value interface{}, f *objectSelectorField, cb R
 				ctx.listener.NotifyError(err)
 			}
 		}()
-		fieldValue, err = resolver.Resolve(resolverContext, value)
+		fieldValue, err = resolver.Resolve(ctx, value)
 	}
 	return
 }
 
-func safeAsync(ctx exeContext, async schema.AsyncValue, f *objectSelectorField, fieldCollector collector, cb ResolveCompleteCallback) contFunc {
+func safeAsync(ctx *exeContext, async schema.AsyncValue, f *objectSelectorField, fieldCollector collector, cb ResolveCompleteCallback) contFunc {
 	return func() (ret contFunc) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -215,17 +219,16 @@ func safeAsync(ctx exeContext, async schema.AsyncValue, f *objectSelectorField, 
 	}
 }
 
-func (s *objectSelector) apply(ctx exeContext, value interface{}, collector collector) contFunc {
+func (s *objectSelector) apply(ctx *exeContext, value interface{}, collector collector) contFunc {
 	if value == nil {
 		return nil
 	}
 
 	valueCollector := collector.Object(len(s.Fields))
-	var deferred worklist
+	var deferred []contFunc
 	for _, f := range s.Fields {
 		currentField := f
 		fieldCollector := valueCollector.Field(currentField.AstField.Alias)
-		currentField.Sel.prepareCollector(fieldCollector)
 
 		cb, err := ctx.listener.NotifyResolve(currentField.AstField, currentField.Field)
 		if err != nil {
@@ -238,10 +241,16 @@ func (s *objectSelector) apply(ctx exeContext, value interface{}, collector coll
 			fieldCollector.Error(err, currentField.Row, currentField.Col)
 			continue
 		}
+
+		var cf contFunc
 		if async, ok := value.(schema.AsyncValue); ok {
-			deferred.Add(safeAsync(ctx, async, currentField, fieldCollector, cb))
+			cf = safeAsync(ctx, async, currentField, fieldCollector, cb)
 		} else {
-			deferred.Add(currentField.Sel.apply(ctx, value, fieldCollector))
+			cf = currentField.Sel.apply(ctx, value, fieldCollector)
+		}
+
+		if cf != nil {
+			deferred = append(deferred, cf)
 		}
 
 		// FUTURE: If and when we support mutations, instead of adding contFunc
@@ -250,16 +259,11 @@ func (s *objectSelector) apply(ctx exeContext, value interface{}, collector coll
 	}
 
 	if len(deferred) > 0 {
-		return deferred.Continue
+		wl := worklist(deferred)
+		return wl.Continue
 	}
 
 	return nil
-}
-
-type resolverContextImpl struct {
-	exeContext
-	fieldWalker
-	f *objectSelectorField
 }
 
 type fieldWalker struct {
@@ -267,26 +271,37 @@ type fieldWalker struct {
 	field *ast.Field
 }
 
-func (c *resolverContextImpl) GetArgumentValue(name string) (interface{}, error) {
-	argResolver, ok := c.f.ArgResolvers[name]
+func (c *exeContext) GetArgumentValue(name string) (interface{}, error) {
+	argResolver, ok := c.currentField.ArgResolvers[name]
 	if !ok {
 		return nil, fmt.Errorf("Invalid argument %s", name)
 	}
 
-	val, ok := c.f.ArgValues[name]
+	val, ok := c.currentField.ArgValues[name]
 	if !ok {
-		rv, err := argResolver(c, c.f.DefaultValues[name])
+		rv, err := argResolver(c, c.currentField.DefaultValues[name])
 		if err != nil {
 			err = fmt.Errorf("Error in argument %s: %v", name, err)
 		}
 		return rv, err
 	}
 
-	rv, err := argResolver(c, c.astValueToLiteralValue(val))
+	var lv schema.LiteralValue
+	if converted, ok := val.(schema.LiteralValue); ok {
+		lv = converted
+	} else {
+		lv = c.astValueToLiteralValue(val.(ast.Value))
+	}
+
+	rv, err := argResolver(c, lv)
 	if err != nil {
 		err = fmt.Errorf("Error in argument %s: %v", name, err)
 	}
 	return rv, err
+}
+
+func (c *exeContext) WalkChildSelections(cb schema.FieldWalkCB) bool {
+	return fieldWalker{c.currentField.Sel, c.currentField.AstField}.WalkChildSelections(cb)
 }
 
 func (f fieldWalker) WalkChildSelections(cb schema.FieldWalkCB) bool {
@@ -333,7 +348,7 @@ func (f fieldWalker) WalkChildSelections(cb schema.FieldWalkCB) bool {
 	return false
 }
 
-func (c *resolverContextImpl) astValueToLiteralValue(val ast.Value) schema.LiteralValue {
+func (c *exeContext) astValueToLiteralValue(val ast.Value) schema.LiteralValue {
 	switch v := val.(type) {
 	case ast.StringValue:
 		return schema.LiteralString(v.V)
@@ -354,7 +369,7 @@ func (c *resolverContextImpl) astValueToLiteralValue(val ast.Value) schema.Liter
 		}
 		return ary
 	case ast.ObjectValue:
-		m := make(schema.LiteralObject)
+		m := make(schema.LiteralObject, len(v.V))
 		for k, e := range v.V {
 			m[k] = c.astValueToLiteralValue(e)
 		}
@@ -363,4 +378,42 @@ func (c *resolverContextImpl) astValueToLiteralValue(val ast.Value) schema.Liter
 		return c.variables[v.Name]
 	}
 	panic(fmt.Errorf("Unknown ast value %v", val))
+}
+
+func concreteAstValueToLiteralValue(val ast.Value) (schema.LiteralValue, bool) {
+	switch v := val.(type) {
+	case ast.StringValue:
+		return schema.LiteralString(v.V), true
+	case ast.IntValue:
+		return schema.LiteralNumber(v.V), true
+	case ast.FloatValue:
+		return schema.LiteralNumber(v.V), true
+	case ast.BooleanValue:
+		return schema.LiteralBool(v.V), true
+	case ast.NilValue:
+		return nil, true
+	case ast.EnumValue:
+		return schema.LiteralString(v.V), true
+	case ast.ArrayValue:
+		ary := make(schema.LiteralArray, len(v.V))
+		var concrete bool
+		for i, e := range v.V {
+			ary[i], concrete = concreteAstValueToLiteralValue(e)
+			if !concrete {
+				return nil, false
+			}
+		}
+		return ary, true
+	case ast.ObjectValue:
+		m := make(schema.LiteralObject, len(v.V))
+		var concrete bool
+		for k, e := range v.V {
+			m[k], concrete = concreteAstValueToLiteralValue(e)
+			if !concrete {
+				return nil, false
+			}
+		}
+		return m, true
+	}
+	return nil, false
 }

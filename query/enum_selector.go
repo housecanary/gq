@@ -33,7 +33,7 @@ func buildEnumSelector(cc *compileContext, typ *schema.EnumType, selections ast.
 	return enumSelector{Type: typ, defaultSelector: cc.newDefaultSelector()}, nil
 }
 
-func (s enumSelector) apply(ctx exeContext, value interface{}, collector collector) contFunc {
+func (s enumSelector) apply(ctx *exeContext, value interface{}, collector collector) contFunc {
 	lv, err := s.Type.Encode(ctx, value)
 	if err != nil {
 		ctx.listener.NotifyError(err)

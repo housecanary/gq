@@ -64,16 +64,12 @@ func (q *PreparedQuery) Execute(ctx context.Context, rootValue interface{}, vari
 	if listener == nil {
 		listener = BaseExecutionListener{}
 	}
-	var deferred worklist
 	cc := acquireJSONCollectorContext()
 	collector := &vJSONCollector{cc: cc}
-	q.root.prepareCollector(collector)
-	deferred.Add(q.root.apply(exeContext{ctx, listener, variables}, rootValue, collector))
-	if deferred != nil {
-		for cont := deferred.Continue; cont != nil; {
-			listener.NotifyIdle()
-			cont = cont()
-		}
+	cf := q.root.apply(&exeContext{ctx, listener, variables, nil}, rootValue, collector)
+	for cont := cf; cont != nil; {
+		listener.NotifyIdle()
+		cont = cont()
 	}
 
 	stream := streamPool.BorrowStream(nil)
@@ -133,8 +129,7 @@ func (b *Batch) Execute(ctx context.Context, listener ExecutionListener) [][]byt
 		collectors[i] = collector
 		rootValue := b.rootValues[i]
 		variables := b.variables[i]
-		q.root.prepareCollector(collector)
-		deferred.Add(q.root.apply(exeContext{ctx, listener, variables}, rootValue, collector))
+		deferred.Add(q.root.apply(&exeContext{ctx, listener, variables, nil}, rootValue, collector))
 	}
 
 	// Drain the worklist

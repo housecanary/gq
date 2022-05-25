@@ -21,7 +21,7 @@ import (
 
 // A notNilSelector wraps a delegate selector and enforces that the returned
 // value is not nil.  Most of the work to do so is in the collector, the notNilSelector
-// simply marks the collector as required in its prepareCollector method.
+// simply marks the collector as required.
 type notNilSelector struct {
 	Delegate selector
 	defaultSelector
@@ -35,10 +35,20 @@ func buildNotNilSelector(cc *compileContext, typ *schema.NotNilType, selections 
 	return notNilSelector{Delegate: s, defaultSelector: cc.newDefaultSelector()}, nil
 }
 
-func (s notNilSelector) prepareCollector(c collector) {
-	c.Required(s.row, s.col)
+func (s notNilSelector) apply(ctx *exeContext, value interface{}, collector collector) (cf contFunc) {
+	defer func() {
+		cf = s.ensureRequiredSet(collector, cf)
+	}()
+	cf = s.Delegate.apply(ctx, value, collector)
+	return
 }
 
-func (s notNilSelector) apply(ctx exeContext, value interface{}, collector collector) contFunc {
-	return s.Delegate.apply(ctx, value, collector)
+func (s notNilSelector) ensureRequiredSet(collector collector, cf contFunc) contFunc {
+	if cf == nil {
+		collector.Required(s.row, s.col)
+		return nil
+	}
+	return func() contFunc {
+		return s.ensureRequiredSet(collector, cf())
+	}
 }

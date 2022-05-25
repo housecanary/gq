@@ -128,6 +128,7 @@ type vJSONCollector struct {
 
 	// kind/dat store the value of this node. dat is interpreted according to kind.
 	kind vKind
+	seri []byte
 	dat  interface{}
 }
 
@@ -151,14 +152,14 @@ func (c *vJSONCollector) serializeJSON(stream *jsonstream.Stream, depth int) ([]
 
 	if c.kind == vKindNil && c.required {
 		e := c.dat.(edat)
-		return []gqlError{pe(errUnexpectedNil, depth, e.row, e.col)}, false
+		return []gqlError{pe(e.err, depth, e.row, e.col)}, false
 	}
 
 	switch c.kind {
 	case vKindNil:
 		stream.WriteNil()
 	case vKindSerialized:
-		stream.Write(c.dat.([]byte))
+		stream.Write(c.seri)
 	case vKindSub:
 		sub := c.dat.(jsonCollector)
 		allErrors, ok := sub.serializeJSON(stream, depth)
@@ -185,7 +186,7 @@ func (c *vJSONCollector) Int(v int64) {
 	pre := len(c.cc.stream.Buffer())
 	c.cc.stream.WriteInt64(v)
 	c.kind = vKindSerialized
-	c.dat = c.cc.stream.Buffer()[pre:]
+	c.seri = c.cc.stream.Buffer()[pre:]
 }
 
 func (c *vJSONCollector) Float(v float64) {
@@ -195,7 +196,7 @@ func (c *vJSONCollector) Float(v float64) {
 	pre := len(c.cc.stream.Buffer())
 	c.cc.stream.WriteFloat64(v)
 	c.kind = vKindSerialized
-	c.dat = c.cc.stream.Buffer()[pre:]
+	c.seri = c.cc.stream.Buffer()[pre:]
 }
 func (c *vJSONCollector) Bool(v bool) {
 	if c.kind != vKindNil {
@@ -204,7 +205,7 @@ func (c *vJSONCollector) Bool(v bool) {
 	pre := len(c.cc.stream.Buffer())
 	c.cc.stream.WriteBool(v)
 	c.kind = vKindSerialized
-	c.dat = c.cc.stream.Buffer()[pre:]
+	c.seri = c.cc.stream.Buffer()[pre:]
 }
 func (c *vJSONCollector) String(v string) {
 	if c.kind != vKindNil {
@@ -213,7 +214,7 @@ func (c *vJSONCollector) String(v string) {
 	pre := len(c.cc.stream.Buffer())
 	c.cc.stream.WriteString(v)
 	c.kind = vKindSerialized
-	c.dat = c.cc.stream.Buffer()[pre:]
+	c.seri = c.cc.stream.Buffer()[pre:]
 }
 
 func (c *vJSONCollector) Object(sizeHint int) objectCollector {
@@ -252,7 +253,7 @@ func (c *vJSONCollector) Array(sizeHint int) arrayCollector {
 
 func (c *vJSONCollector) Required(row, col int) {
 	if c.kind == vKindNil {
-		c.dat = edat{nil, row, col}
+		c.dat = edat{errUnexpectedNil, row, col}
 	}
 	c.required = true
 }
@@ -272,6 +273,7 @@ func (c *vJSONCollector) release() {
 	}
 	c.kind = vKindNil
 	c.dat = nil
+	c.seri = nil
 }
 
 var _ objectCollector = &oJSONCollector{}

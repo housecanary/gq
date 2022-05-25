@@ -49,7 +49,7 @@ func (t *InputObjectType) isType() {}
 // Decode translates a literal value into the corresponding InputObject
 // representation
 func (t *InputObjectType) Decode(ctx context.Context, v LiteralValue) (interface{}, error) {
-	return t.decode(inputObjectDecodeContext{t, v, ctx})
+	return t.decode(&inputObjectDecodeContext{t, v, ctx})
 }
 
 // InputListCreator returns a creator for lists of this input object type
@@ -63,9 +63,10 @@ func (t *InputObjectType) InputListCreator() InputListCreator {
 type InputObjectFieldDescriptor struct {
 	named
 	schemaElement
-	typ          Type
-	defaultValue ast.Value
-	decoder      DecodeScalar
+	typ             Type
+	defaultValue    LiteralValue
+	defaultValueAst ast.Value
+	decoder         DecodeScalar
 }
 
 // Type returns the type of this field
@@ -79,11 +80,11 @@ type inputObjectDecodeContext struct {
 	ctx  context.Context
 }
 
-func (i inputObjectDecodeContext) IsNil() bool {
+func (i *inputObjectDecodeContext) IsNil() bool {
 	return i.root == nil
 }
 
-func (i inputObjectDecodeContext) GetFieldValue(name string) (interface{}, error) {
+func (i *inputObjectDecodeContext) GetFieldValue(name string) (interface{}, error) {
 	fd, ok := i.t.fields[name]
 	if !ok {
 		return nil, fmt.Errorf("Input object requested value of invalid field %s", name)
@@ -94,7 +95,7 @@ func (i inputObjectDecodeContext) GetFieldValue(name string) (interface{}, error
 		if ok {
 			return fd.decoder(i.ctx, val)
 		}
-		return fd.decoder(i.ctx, literalValueFromAstValue(fd.defaultValue))
+		return fd.decoder(i.ctx, fd.defaultValue)
 	}
 
 	return nil, fmt.Errorf("Input value is not an object (%v)", i.root)
@@ -196,7 +197,7 @@ func (d *InputObjectFieldDescriptor) writeSchemaDefinition(w *schemaWriter) {
 	fmt.Fprintf(w, "%s: %s", d.name, d.typ.signature())
 	if d.defaultValue != nil {
 		w.write(" = ")
-		w.write(d.defaultValue.Representation())
+		w.write(d.defaultValueAst.Representation())
 	}
 	for _, e := range d.directives {
 		w.write(" ")
