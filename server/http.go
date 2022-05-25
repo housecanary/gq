@@ -128,7 +128,7 @@ func NewGraphQLHandler(s *schema.Schema, config *GraphQLHandlerConfig) *GraphQLH
 					result = q.Execute(ctx, root, vars, ql)
 				})
 			} else {
-				result = q.Execute(nil, root, vars, nil)
+				result = q.Execute(req.Context(), root, vars, nil)
 			}
 			return result
 		}

@@ -249,4 +249,7 @@ type GraphqlVisitor interface {
 
 	// Visit a parse tree produced by GraphqlParser#partialScalarTypeDefinition.
 	VisitPartialScalarTypeDefinition(ctx *PartialScalarTypeDefinitionContext) interface{}
+
+	// Visit a parse tree produced by GraphqlParser#tsResolverFieldDefinition.
+	VisitTsResolverFieldDefinition(ctx *TsResolverFieldDefinitionContext) interface{}
 }

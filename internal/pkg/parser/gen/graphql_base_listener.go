@@ -535,3 +535,9 @@ func (s *BaseGraphqlListener) EnterPartialScalarTypeDefinition(ctx *PartialScala
 // ExitPartialScalarTypeDefinition is called when production partialScalarTypeDefinition is exited.
 func (s *BaseGraphqlListener) ExitPartialScalarTypeDefinition(ctx *PartialScalarTypeDefinitionContext) {
 }
+
+// EnterTsResolverFieldDefinition is called when production tsResolverFieldDefinition is entered.
+func (s *BaseGraphqlListener) EnterTsResolverFieldDefinition(ctx *TsResolverFieldDefinitionContext) {}
+
+// ExitTsResolverFieldDefinition is called when production tsResolverFieldDefinition is exited.
+func (s *BaseGraphqlListener) ExitTsResolverFieldDefinition(ctx *TsResolverFieldDefinitionContext) {}

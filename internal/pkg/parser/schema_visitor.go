@@ -267,6 +267,25 @@ func (v *schemaVisitor) VisitPartialFieldDefinition(ctx *gen.PartialFieldDefinit
 	return &d
 }
 
+func (v *schemaVisitor) VisitTsResolverFieldDefinition(ctx *gen.TsResolverFieldDefinitionContext) interface{} {
+	var d ast.FieldDefinition
+
+	if c := ctx.Description(); c != nil {
+		d.Description = c.Accept(v).(string)
+	}
+
+	d.Name = ctx.Name().Accept(v).(string)
+
+	if c := ctx.GqlType(); c != nil {
+		d.Type = c.Accept(v).(ast.Type)
+	}
+
+	if c := ctx.Directives(); c != nil {
+		d.Directives = c.Accept(v).(ast.Directives)
+	}
+	return &d
+}
+
 func (v *schemaVisitor) VisitPartialObjectTypeDefinition(ctx *gen.PartialObjectTypeDefinitionContext) interface{} {
 	var d ast.ObjectTypeDefinition
 	if c := ctx.Name(); c != nil {
@@ -345,7 +364,9 @@ func (v *schemaVisitor) VisitPartialEnumTypeDefinition(ctx *gen.PartialEnumTypeD
 		d.Directives = c.Accept(v).(ast.Directives)
 	}
 
-	d.EnumValueDefinitions = ctx.EnumValueDefinitions().Accept(v).(ast.EnumValueDefinitions)
+	if c := ctx.EnumValueDefinitions(); c != nil {
+		d.EnumValueDefinitions = c.Accept(v).(ast.EnumValueDefinitions)
+	}
 
 	return &d
 }

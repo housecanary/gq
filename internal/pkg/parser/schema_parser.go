@@ -28,6 +28,15 @@ func ParsePartialFieldDefinition(input string) (def *ast.FieldDefinition, err Pa
 	return
 }
 
+// ParseTSResolverFieldDefinition parses a partial field definition for a TS resolver
+func ParseTSResolverFieldDefinition(input string) (def *ast.FieldDefinition, err ParseError) {
+	def = nil
+	err = safeParse(input, func(p *gen.GraphqlParser) {
+		def = p.TsResolverFieldDefinition().Accept(&schemaVisitor{}).(*ast.FieldDefinition)
+	})
+	return
+}
+
 // ParsePartialObjectTypeDefinition parses a partial object type definition
 func ParsePartialObjectTypeDefinition(input string) (def *ast.ObjectTypeDefinition, err ParseError) {
 	def = nil
@@ -60,6 +69,15 @@ func ParsePartialEnumTypeDefinition(input string) (def *ast.EnumTypeDefinition, 
 	def = nil
 	err = safeParse(input, func(p *gen.GraphqlParser) {
 		def = p.PartialEnumTypeDefinition().Accept(&schemaVisitor{}).(*ast.EnumTypeDefinition)
+	})
+	return
+}
+
+// ParseEnumValueDefinition parses an enum value definition
+func ParseEnumValueDefinition(input string) (def *ast.EnumValueDefinition, err ParseError) {
+	def = nil
+	err = safeParse(input, func(p *gen.GraphqlParser) {
+		def = p.EnumValueDefinition().Accept(&schemaVisitor{}).(*ast.EnumValueDefinition)
 	})
 	return
 }

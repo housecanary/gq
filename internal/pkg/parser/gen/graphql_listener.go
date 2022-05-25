@@ -250,6 +250,9 @@ type GraphqlListener interface {
 	// EnterPartialScalarTypeDefinition is called when entering the partialScalarTypeDefinition production.
 	EnterPartialScalarTypeDefinition(c *PartialScalarTypeDefinitionContext)
 
+	// EnterTsResolverFieldDefinition is called when entering the tsResolverFieldDefinition production.
+	EnterTsResolverFieldDefinition(c *TsResolverFieldDefinitionContext)
+
 	// ExitOperationType is called when exiting the operationType production.
 	ExitOperationType(c *OperationTypeContext)
 
@@ -492,4 +495,7 @@ type GraphqlListener interface {
 
 	// ExitPartialScalarTypeDefinition is called when exiting the partialScalarTypeDefinition production.
 	ExitPartialScalarTypeDefinition(c *PartialScalarTypeDefinitionContext)
+
+	// ExitTsResolverFieldDefinition is called when exiting the tsResolverFieldDefinition production.
+	ExitTsResolverFieldDefinition(c *TsResolverFieldDefinitionContext)
 }

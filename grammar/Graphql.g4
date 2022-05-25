@@ -372,7 +372,7 @@ partialInputValueDefinition :
 partialEnumTypeDefinition :
     description? ENUM name directives? enumValueDefinitions |
     description? name directives? enumValueDefinitions |
-    description? directives? enumValueDefinitions;
+    description? directives? enumValueDefinitions?;
 
 partialInterfaceTypeDefinition :
     description? INTERFACE name directives? fieldsDefinition |
@@ -385,3 +385,8 @@ partialUnionTypeDefinition :
     description? directives? unionMembership?;
 
 partialScalarTypeDefinition : description? name? directives?;
+
+/* TS Definitions */
+tsResolverFieldDefinition : 
+    description? name directives? |
+    description? name ':' gqlType directives?;

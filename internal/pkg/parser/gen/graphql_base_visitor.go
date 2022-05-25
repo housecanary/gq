@@ -330,3 +330,7 @@ func (v *BaseGraphqlVisitor) VisitPartialUnionTypeDefinition(ctx *PartialUnionTy
 func (v *BaseGraphqlVisitor) VisitPartialScalarTypeDefinition(ctx *PartialScalarTypeDefinitionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
+
+func (v *BaseGraphqlVisitor) VisitTsResolverFieldDefinition(ctx *TsResolverFieldDefinitionContext) interface{} {
+	return v.VisitChildren(ctx)
+}

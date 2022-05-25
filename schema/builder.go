@@ -448,7 +448,7 @@ func (b *ObjectTypeBuilder) registerType(ctx *buildContext) buildError {
 	for i, e := range b.implements {
 		t, err := b.builder.resolveAstType(ctx, &ast.SimpleType{Name: e})
 		if err != nil {
-			return err
+			return ctx.error("cannot resolve interface type %s: %v", e, err)
 		}
 		it, ok := t.(*InterfaceType)
 		if !ok {
@@ -724,6 +724,7 @@ func (b *InputObjectTypeBuilder) registerType(ctx *buildContext) buildError {
 			f.named,
 			f.toSchemaElement(),
 			fieldType,
+			literalValueFromAstValue(f.defaultValue),
 			f.defaultValue,
 			decoder,
 		}
