@@ -1,124 +1,15 @@
 package ts
 
-import (
-	"fmt"
-	"reflect"
-
-	"github.com/codemodus/kace"
-
-	"github.com/housecanary/gq/ast"
-	"github.com/housecanary/gq/internal/pkg/parser"
-	"github.com/housecanary/gq/schema"
-)
-
+// An InputObjectType represents the GQL type of an input object created from Go structs
 type InputObjectType[O any] struct {
 	def string
 }
 
-func InputObject[O, P any](mod *ModuleType[P], def string) *InputObjectType[O] {
+// InputObject creates an InputObjectType and registers it with the given module
+func InputObject[O any](mod *ModuleType, def string) *InputObjectType[O] {
 	it := &InputObjectType[O]{
 		def: def,
 	}
 	mod.addType(&inputObjectTypeBuilder[O]{it: it})
 	return it
-}
-
-type inputObjectTypeBuilder[O any] struct {
-	it  *InputObjectType[O]
-	def *ast.InputObjectTypeDefinition
-}
-
-func (b *inputObjectTypeBuilder[O]) describe() string {
-	typ := typeOf[O]()
-	return fmt.Sprintf("input object %s", typeDesc(typ))
-}
-
-func (b *inputObjectTypeBuilder[O]) parse(namePrefix string) (string, reflect.Type, error) {
-	typ := typeOf[O]()
-
-	if typ.Kind() != reflect.Struct {
-		return "", nil, fmt.Errorf("Input objects must be represented by a struct, not a %v", typ.Kind())
-	}
-
-	typeDef, err := parser.ParsePartialInputObjectTypeDefinition(b.it.def)
-	if err != nil {
-		return "", nil, err
-	}
-
-	name := typeDef.Name
-	if name == "" {
-		name = kace.Pascal(typ.Name())
-	}
-	name = namePrefix + name
-	typeDef.Name = name
-
-	b.def = typeDef
-	return name, reflect.PointerTo(typ), nil
-}
-
-func (b *inputObjectTypeBuilder[O]) build(c *buildContext, sb *schema.Builder) error {
-	decoder, err := b.makeDecoder(c)
-	if err != nil {
-		return err
-	}
-	tb := sb.AddInputObjectType(
-		b.def.Name,
-		decoder,
-		reflectionInputListCreator{typeOf[*O]()},
-	)
-
-	setSchemaElementProps(tb, b.def.Description, b.def.Directives)
-
-	return b.mapFields(c, tb)
-}
-
-func (b *inputObjectTypeBuilder[O]) makeDecoder(c *buildContext) (schema.DecodeInputObject, error) {
-	typ := typeOf[O]()
-
-	fieldMap := make(map[string][]int)
-	for _, field := range reflect.VisibleFields(typ) {
-		valueDef, _, err := parseStructField(c, field, parser.ParsePartialInputValueDefinition)
-		if err != nil {
-			return nil, fmt.Errorf("error processing field %s: %w", field.Name, err)
-		}
-		fieldMap[valueDef.Name] = field.Index
-	}
-
-	return func(ctx schema.InputObjectDecodeContext) (interface{}, error) {
-		if ctx.IsNil() {
-			return (*O)(nil), nil
-		}
-		var target O
-		rv := reflect.ValueOf(&target).Elem()
-		for k, v := range fieldMap {
-			value, err := ctx.GetFieldValue(k)
-			if err != nil {
-				return nil, err
-			}
-			fieldV, err := rv.FieldByIndexErr(v)
-			if err != nil {
-				return nil, err
-			}
-			fieldV.Set(reflect.ValueOf(value))
-		}
-		return &target, nil
-	}, nil
-}
-
-func (b *inputObjectTypeBuilder[O]) mapFields(c *buildContext, tb *schema.InputObjectTypeBuilder) error {
-	typ := typeOf[O]()
-
-	for _, field := range reflect.VisibleFields(typ) {
-		valueDef, _, err := parseStructField(c, field, parser.ParsePartialInputValueDefinition)
-		if err != nil {
-			return fmt.Errorf("error processing field %s: %w", field.Name, err)
-		}
-		if valueDef == nil {
-			continue
-		}
-		fb := tb.AddField(valueDef.Name, valueDef.Type, valueDef.DefaultValue)
-		setSchemaElementProps(fb, valueDef.Description, valueDef.Directives)
-	}
-
-	return nil
 }

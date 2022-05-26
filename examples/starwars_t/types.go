@@ -5,9 +5,7 @@ import (
 	"github.com/housecanary/gq/types"
 )
 
-type void struct{}
-
-var modType = ts.Module[void]()
+var modType = ts.Module()
 
 type character ts.InterfaceBox
 

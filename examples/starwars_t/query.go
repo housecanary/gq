@@ -66,12 +66,12 @@ var queryType = ts.Object(
 		`,
 		func(q *Query, args *struct {
 			Lookups []*lookupInput
-		}) ts.Result[*human] {
+		}) ts.Result[[]*human] {
 			var humans []*human
 			for _, li := range args.Lookups {
 				h, err := q.resolveHuman(li)
 				if err != nil {
-					return result.Error[*human](err)
+					return result.Error[[]*human](err)
 				}
 				humans = append(humans, h)
 			}

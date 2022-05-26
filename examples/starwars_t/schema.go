@@ -9,5 +9,9 @@ import (
 
 func NewSchemaBuilder() (*schema.Builder, error) {
 	fmt.Println("Using reflective schema")
-	return ts.NewSchemaBuilder(modType)
+	tr, err := ts.NewTypeRegistry(modType)
+	if err != nil {
+		return nil, err
+	}
+	return tr.SchemaBuilder(), nil
 }

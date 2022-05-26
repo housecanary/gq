@@ -44,6 +44,7 @@ type ResolverContext interface {
 	context.Context
 	ChildWalker
 	GetArgumentValue(name string) (interface{}, error)
+	ChildFieldsIterator() FieldSelectionIterator
 }
 
 // ChildWalker is an object that can walk the child selections of a selection
@@ -82,14 +83,16 @@ type ChildWalker interface {
 // FieldWalkCB is a callback for ChildWalker.WalkChildSelections
 type FieldWalkCB func(selection *ast.Field, field *FieldDescriptor, walker ChildWalker) bool
 
+type FieldSelectionIterator interface {
+	Next() bool
+	Selection() *ast.Field
+	SchemaField() *FieldDescriptor
+	ChildFieldsIterator() FieldSelectionIterator
+}
+
 // A Resolver is responsible for extracting the value of a field from
 // a containing object.
 type Resolver interface {
-	// NeedsFullContext returns whether the ctx argument to Resolve should be
-	// a ResolverContext. For resolvers that do not need the services provided
-	// by ResolverContext, returning false allows avoiding some work.
-	NeedsFullContext() bool
-
 	// Resolve extracts a field value from the containing object
 	Resolve(ctx context.Context, v interface{}) (interface{}, error)
 }
@@ -117,11 +120,6 @@ func (s safeResolver) ResolveSafe(ctx context.Context, v interface{}) (interface
 // to implement the Resolver contract
 type SimpleResolver func(v interface{}) (interface{}, error)
 
-// NeedsFullContext implements the Resolver interface
-func (r SimpleResolver) NeedsFullContext() bool {
-	return false
-}
-
 // Resolve implements the Resolver interface
 func (r SimpleResolver) Resolve(ctx context.Context, v interface{}) (interface{}, error) {
 	return r(v)
@@ -131,11 +129,6 @@ func (r SimpleResolver) Resolve(ctx context.Context, v interface{}) (interface{}
 // a context.Context
 type ContextResolver func(ctx context.Context, v interface{}) (interface{}, error)
 
-// NeedsFullContext implements the Resolver interface
-func (r ContextResolver) NeedsFullContext() bool {
-	return false
-}
-
 // Resolve implements the Resolver interface
 func (r ContextResolver) Resolve(ctx context.Context, v interface{}) (interface{}, error) {
 	return r(ctx, v)
@@ -144,11 +137,6 @@ func (r ContextResolver) Resolve(ctx context.Context, v interface{}) (interface{
 // FullResolver is a function that can be used to resolve values given
 // a ResolverContext
 type FullResolver func(ctx ResolverContext, v interface{}) (interface{}, error)
-
-// NeedsFullContext implements the Resolver interface
-func (r FullResolver) NeedsFullContext() bool {
-	return true
-}
 
 // Resolve implements the Resolver interface
 func (r FullResolver) Resolve(ctx context.Context, v interface{}) (interface{}, error) {

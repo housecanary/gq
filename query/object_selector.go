@@ -266,11 +266,6 @@ func (s *objectSelector) apply(ctx *exeContext, value interface{}, collector col
 	return nil
 }
 
-type fieldWalker struct {
-	sel   selector
-	field *ast.Field
-}
-
 func (c *exeContext) GetArgumentValue(name string) (interface{}, error) {
 	argResolver, ok := c.currentField.ArgResolvers[name]
 	if !ok {
@@ -300,49 +295,24 @@ func (c *exeContext) GetArgumentValue(name string) (interface{}, error) {
 	return rv, err
 }
 
-func (c *exeContext) WalkChildSelections(cb schema.FieldWalkCB) bool {
-	return fieldWalker{c.currentField.Sel, c.currentField.AstField}.WalkChildSelections(cb)
+func (c *exeContext) ChildFieldsIterator() schema.FieldSelectionIterator {
+	return newSelectionIterator(c.currentField.Sel)
 }
 
-func (f fieldWalker) WalkChildSelections(cb schema.FieldWalkCB) bool {
-	walkObjectSelections := func(o *objectSelector) bool {
-		for _, c := range o.Fields {
-			abort := cb(c.AstField, c.Field, fieldWalker{c.Sel, c.AstField})
-			if abort {
-				return true
-			}
-		}
-		return false
-	}
-	sel := f.sel
-	for {
-		switch t := sel.(type) {
-		case listSelector:
-			sel = t.ElementSelector
-			continue
-		case notNilSelector:
-			sel = t.Delegate
-			continue
-		}
-		break
-	}
+func (c *exeContext) WalkChildSelections(cb schema.FieldWalkCB) bool {
+	return walkChildSelectionsAdapter{c.currentField.Sel}.WalkChildSelections(cb)
+}
 
-	switch t := sel.(type) {
-	case *objectSelector:
-		return walkObjectSelections(t)
-	case interfaceSelector:
-		for _, e := range t.Elements {
-			abort := walkObjectSelections(e.(*objectSelector))
-			if abort {
-				return true
-			}
-		}
-	case unionSelector:
-		for _, e := range t.Elements {
-			abort := walkObjectSelections(e.(*objectSelector))
-			if abort {
-				return true
-			}
+type walkChildSelectionsAdapter struct {
+	sel selector
+}
+
+func (a walkChildSelectionsAdapter) WalkChildSelections(cb schema.FieldWalkCB) bool {
+	itr := newSelectionIterator(a.sel)
+	for itr.Next() {
+		abort := cb(itr.Selection(), itr.SchemaField(), walkChildSelectionsAdapter{itr.current.Sel})
+		if abort {
+			return true
 		}
 	}
 	return false

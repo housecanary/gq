@@ -108,3 +108,12 @@ func ParsePartialScalarTypeDefinition(input string) (def *ast.ScalarTypeDefiniti
 	})
 	return
 }
+
+// ParseTSTypeDefinition parses a partial scalar type definition
+func ParseTSTypeDefinition(input string) (def *ast.BasicTypeDefinition, err ParseError) {
+	def = nil
+	err = safeParse(input, func(p *gen.GraphqlParser) {
+		def = p.TsTypeDefinition().Accept(&schemaVisitor{}).(*ast.BasicTypeDefinition)
+	})
+	return
+}

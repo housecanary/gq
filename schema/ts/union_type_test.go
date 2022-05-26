@@ -4,7 +4,7 @@ import (
 	"github.com/housecanary/gq/schema/ts"
 )
 
-var utMod = ts.Module[provider]()
+var utMod = ts.Module()
 
 type testUnion ts.UnionBox
 

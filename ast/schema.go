@@ -14,6 +14,12 @@
 
 package ast
 
+type BasicTypeDefinition struct {
+	Description string
+	Name        string
+	Directives  Directives
+}
+
 type ScalarTypeDefinition struct {
 	Description string
 	Name        string

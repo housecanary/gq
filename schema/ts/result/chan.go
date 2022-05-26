@@ -2,8 +2,6 @@ package result
 
 import (
 	"context"
-
-	"github.com/housecanary/gq/schema"
 )
 
 // Chan constructs an asynchronous result by reading a struct with a Value and Error
@@ -23,8 +21,8 @@ type resultChan[T any, S valErr[T]] struct {
 	ch <-chan S
 }
 
-func (r resultChan[T, S]) UnpackResult() (interface{}, error) {
-	return schema.AsyncValueFunc(func(ctx context.Context) (interface{}, error) {
+func (r resultChan[T, S]) UnpackResult() (T, func(context.Context) (T, error), error) {
+	return empty[T](), func(ctx context.Context) (T, error) {
 		var empty T
 		select {
 		case <-ctx.Done():
@@ -36,5 +34,5 @@ func (r resultChan[T, S]) UnpackResult() (interface{}, error) {
 			})(in)
 			return result.Value, result.Error
 		}
-	}), nil
+	}, nil
 }

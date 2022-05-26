@@ -253,6 +253,9 @@ type GraphqlListener interface {
 	// EnterTsResolverFieldDefinition is called when entering the tsResolverFieldDefinition production.
 	EnterTsResolverFieldDefinition(c *TsResolverFieldDefinitionContext)
 
+	// EnterTsTypeDefinition is called when entering the tsTypeDefinition production.
+	EnterTsTypeDefinition(c *TsTypeDefinitionContext)
+
 	// ExitOperationType is called when exiting the operationType production.
 	ExitOperationType(c *OperationTypeContext)
 
@@ -498,4 +501,7 @@ type GraphqlListener interface {
 
 	// ExitTsResolverFieldDefinition is called when exiting the tsResolverFieldDefinition production.
 	ExitTsResolverFieldDefinition(c *TsResolverFieldDefinitionContext)
+
+	// ExitTsTypeDefinition is called when exiting the tsTypeDefinition production.
+	ExitTsTypeDefinition(c *TsTypeDefinitionContext)
 }

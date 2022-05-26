@@ -2,8 +2,6 @@ package result
 
 import (
 	"context"
-
-	"github.com/housecanary/gq/schema"
 )
 
 // Async constructs an asynchronous result with the result value supplied
@@ -16,8 +14,6 @@ type resultAsync[T any] struct {
 	value func(context.Context) (T, error)
 }
 
-func (r resultAsync[T]) UnpackResult() (interface{}, error) {
-	return schema.AsyncValueFunc(func(ctx context.Context) (interface{}, error) {
-		return r.value(ctx)
-	}), nil
+func (r resultAsync[T]) UnpackResult() (T, func(context.Context) (T, error), error) {
+	return empty[T](), r.value, nil
 }

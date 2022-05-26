@@ -390,3 +390,6 @@ partialScalarTypeDefinition : description? name? directives?;
 tsResolverFieldDefinition : 
     description? name directives? |
     description? name ':' gqlType directives?;
+
+tsTypeDefinition :
+    description? name? directives?;

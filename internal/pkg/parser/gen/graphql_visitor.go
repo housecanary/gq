@@ -252,4 +252,7 @@ type GraphqlVisitor interface {
 
 	// Visit a parse tree produced by GraphqlParser#tsResolverFieldDefinition.
 	VisitTsResolverFieldDefinition(ctx *TsResolverFieldDefinitionContext) interface{}
+
+	// Visit a parse tree produced by GraphqlParser#tsTypeDefinition.
+	VisitTsTypeDefinition(ctx *TsTypeDefinitionContext) interface{}
 }

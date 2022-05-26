@@ -1,52 +1,50 @@
-package ts_test
+package ts
 
 import (
 	"context"
-	"errors"
-
-	"github.com/housecanary/gq/schema/ts"
-	"github.com/housecanary/gq/schema/ts/result"
+	"testing"
 )
 
-type provider struct{}
+func TestObjectFieldResolvers(t *testing.T) {
+	m := Module()
 
-var otMod = ts.Module[provider]()
+	ot := Object[struct {
+		AsStruct testObject
+		AsPtr    *testObject
+		Enum     testEnum
+	}](m, "x")
 
-type testObject struct{}
+	instance := ot.NewInstance()
+	instance.AsPtr = &testObject{"a"}
+	instance.AsStruct = testObject{"b"}
+	instance.Enum = testEnumA
 
-var testObjectType = ts.Object(
-	otMod, "TestObject",
-
-	ts.Field("a", func(t *testObject) ts.Result[string] {
-		if false {
-			return result.Error[string](errors.New("test"))
+	tr := mustBuildTypes(t, m)
+	structResult := must(tr.QueryField(context.Background(), instance, "asStruct", nil)).Get(t)
+	if to, ok := structResult.(*testObject); ok {
+		if to.value != "b" {
+			t.Fatal("expected value to be b")
 		}
+	} else {
+		t.Fatal("expected struct result to be *testObject")
+	}
 
-		if false {
-			return result.Async(func(context.Context) (string, error) {
-				return "", nil
-			})
+	ptrResult := must(tr.QueryField(context.Background(), instance, "asPtr", nil)).Get(t)
+	if to, ok := ptrResult.(*testObject); ok {
+		if to.value != "a" {
+			t.Fatal("expected value to be a")
 		}
+	} else {
+		t.Fatal("expected ptr result to be *testObject")
+	}
 
-		if false {
-			var ch chan testStringResult
-			return result.Chan(ch)
+	enumResult := must(tr.QueryField(context.Background(), instance, "enum", nil)).Get(t)
+	if enm, ok := enumResult.(testEnum); ok {
+		if enm != testEnumA {
+			t.Fatal("expected value to be a")
 		}
+	} else {
+		t.Fatal("expected enum result to be testEnum")
+	}
 
-		return result.Of("")
-	}),
-
-	ts.FieldP("b", otMod, func(p provider, t *testObject) ts.Result[string] {
-		return result.Of("")
-	}),
-)
-
-type testStringResult struct {
-	Value string
-	Error error
-}
-
-type bArgs struct {
-	Value string
-	Count int
 }

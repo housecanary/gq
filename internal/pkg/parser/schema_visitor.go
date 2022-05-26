@@ -51,6 +51,23 @@ func (v *schemaVisitor) VisitScalarTypeDefinition(ctx *gen.ScalarTypeDefinitionC
 	return &d
 }
 
+func (v *schemaVisitor) VisitTsTypeDefinition(ctx *gen.TsTypeDefinitionContext) interface{} {
+	var d ast.BasicTypeDefinition
+	if c := ctx.Description(); c != nil {
+		d.Description = c.Accept(v).(string)
+	}
+
+	if c := ctx.Name(); c != nil {
+		d.Name = c.Accept(v).(string)
+	}
+
+	if c := ctx.Directives(); c != nil {
+		d.Directives = c.Accept(v).(ast.Directives)
+	}
+
+	return &d
+}
+
 func (v *schemaVisitor) VisitObjectTypeDefinition(ctx *gen.ObjectTypeDefinitionContext) interface{} {
 	var d ast.ObjectTypeDefinition
 	if c := ctx.Description(); c != nil {

@@ -2,7 +2,7 @@ package ts
 
 import "github.com/housecanary/gq/types"
 
-var BuiltinTypes = Module[struct{}]()
+var BuiltinTypes = Module()
 
 var IDType = Scalar[types.ID](BuiltinTypes, "")
 var StringType = Scalar[types.String](BuiltinTypes, "")

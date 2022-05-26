@@ -36,8 +36,12 @@ func typeOf[T any]() reflect.Type {
 	return reflect.TypeOf(&empty).Elem()
 }
 
-func parseStructField[P func(string) (*R, parser.ParseError), R any](c *buildContext, f reflect.StructField, parse P) (*R, bool, error) {
-	if f.Anonymous {
+type structParseResult interface {
+	ast.InputValueDefinition | ast.FieldDefinition
+}
+
+func parseStructField[P func(string) (*R, parser.ParseError), R structParseResult](c *buildContext, f reflect.StructField, parse P) (*R, bool, error) {
+	if f.Anonymous || !f.IsExported() {
 		return nil, false, nil
 	}
 	var parseResult R
@@ -62,6 +66,8 @@ func parseStructField[P func(string) (*R, parser.ParseError), R any](c *buildCon
 	var pName *string
 	var pDesc *string
 	var pTyp *ast.Type
+	tryPtrType := false
+	allowInputObject := true
 	switch pr := (interface{})(&parseResult).(type) {
 	case *ast.InputValueDefinition:
 		pName = &pr.Name
@@ -71,6 +77,8 @@ func parseStructField[P func(string) (*R, parser.ParseError), R any](c *buildCon
 		pName = &pr.Name
 		pDesc = &pr.Description
 		pTyp = &pr.Type
+		tryPtrType = true
+		allowInputObject = false
 	}
 
 	if *pName == "" {
@@ -82,16 +90,33 @@ func parseStructField[P func(string) (*R, parser.ParseError), R any](c *buildCon
 	}
 
 	var typeWasInferred = false
+
+	// If tryPtrType is set check and see if T is a struct and *T is in the
+	// type registry as an object type. If so, use that to calculate the
+	// field type instead.
+	fTyp := f.Type
+	if tryPtrType && fTyp.Kind() == reflect.Struct {
+		if gqlType, ok := c.goTypeToSchemaType[reflect.PointerTo(fTyp)]; ok && gqlType.kind == kindObject {
+			fTyp = reflect.PointerTo(fTyp)
+		}
+	}
 	if *pTyp == nil {
-		astTypeFromGo, err := c.astTypeForGoType(f.Type)
+		astTypeFromGo, err := c.astTypeForGoType(fTyp)
 		if err != nil {
 			return nil, false, err
 		}
 		typeWasInferred = true
 		*pTyp = astTypeFromGo
 	} else {
-		if err := c.checkTypeCompatible(f.Type, *pTyp); err != nil {
+		if err := c.checkTypeCompatible(fTyp, *pTyp); err != nil {
 			return nil, false, err
+		}
+	}
+
+	if !allowInputObject {
+		gqlType := c.goTypeToSchemaType[fTyp]
+		if gqlType.kind == kindInputObject {
+			return nil, false, fmt.Errorf("input object type %s not allowed as a GQL object field", gqlType.astType.Signature())
 		}
 	}
 
@@ -135,4 +160,26 @@ func typeDesc(t reflect.Type) string {
 	}
 
 	return fmt.Sprintf("%s{%s}{%s}", prefix, pkgName, name)
+}
+
+func parseTypeDef[T any, OT any](kind gqlTypeKind, gqlText, namePrefix string, outTypeDef **ast.BasicTypeDefinition) (*gqlTypeInfo, reflect.Type, error) {
+	typ := typeOf[T]()
+
+	typeDef, err := parser.ParseTSTypeDefinition(gqlText)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	name := typeDef.Name
+	if name == "" {
+		name = kace.Pascal(typ.Name())
+	}
+	if name == "" {
+		return nil, nil, fmt.Errorf("name cannot be inferred from type %v, provide a name in the metadata", typeDesc(typ))
+	}
+	name = namePrefix + name
+	typeDef.Name = name
+	*outTypeDef = typeDef
+
+	return &gqlTypeInfo{&ast.SimpleType{Name: name}, kind}, typeOf[OT](), nil
 }

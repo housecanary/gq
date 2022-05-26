@@ -541,3 +541,9 @@ func (s *BaseGraphqlListener) EnterTsResolverFieldDefinition(ctx *TsResolverFiel
 
 // ExitTsResolverFieldDefinition is called when production tsResolverFieldDefinition is exited.
 func (s *BaseGraphqlListener) ExitTsResolverFieldDefinition(ctx *TsResolverFieldDefinitionContext) {}
+
+// EnterTsTypeDefinition is called when production tsTypeDefinition is entered.
+func (s *BaseGraphqlListener) EnterTsTypeDefinition(ctx *TsTypeDefinitionContext) {}
+
+// ExitTsTypeDefinition is called when production tsTypeDefinition is exited.
+func (s *BaseGraphqlListener) ExitTsTypeDefinition(ctx *TsTypeDefinitionContext) {}

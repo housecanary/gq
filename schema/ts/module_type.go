@@ -1,38 +1,24 @@
 package ts
 
-import "context"
-
-type ModuleType[P any] struct {
+// A ModuleType represents a group of related types from which a GQL schema can be constructed.
+type ModuleType struct {
 	typePrefix string
 	elements   []builderType
 }
 
-func Module[P any]() *ModuleType[P] {
-	return &ModuleType[P]{}
+// Module creates a new ModuleType
+func Module() *ModuleType {
+	return &ModuleType{}
 }
 
-func (mt *ModuleType[P]) Provider(ctx context.Context, provider P) context.Context {
-	return context.WithValue(ctx, mt, provider)
-}
-
-func (mt *ModuleType[P]) GetProvider(ctx context.Context) P {
-	return ctx.Value(mt).(P)
-}
-
-func (mt *ModuleType[P]) WithPrefix(prefix string) *ModuleType[P] {
-	return &ModuleType[P]{
+// WithPrefix prefixes all types registered in this module with the given prefix.
+// This is useful when using multiple modules as a form of namespacing
+func (mt *ModuleType) WithPrefix(prefix string) *ModuleType {
+	return &ModuleType{
 		typePrefix: prefix,
 	}
 }
 
-func (mt *ModuleType[P]) addType(bt builderType) {
+func (mt *ModuleType) addType(bt builderType) {
 	mt.elements = append(mt.elements, bt)
-}
-
-func (mt *ModuleType[P]) namePrefix() string {
-	return mt.typePrefix
-}
-
-func (mt *ModuleType[P]) types() []builderType {
-	return mt.elements
 }

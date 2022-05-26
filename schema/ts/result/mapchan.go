@@ -2,8 +2,6 @@ package result
 
 import (
 	"context"
-
-	"github.com/housecanary/gq/schema"
 )
 
 // MapChan constructs an asynchronous result that reads a value from the supplied
@@ -17,8 +15,8 @@ type resultMapChan[S, T any] struct {
 	f  func(S) (T, error)
 }
 
-func (r resultMapChan[S, T]) UnpackResult() (interface{}, error) {
-	return schema.AsyncValueFunc(func(ctx context.Context) (interface{}, error) {
+func (r resultMapChan[S, T]) UnpackResult() (T, func(context.Context) (T, error), error) {
+	return empty[T](), func(ctx context.Context) (T, error) {
 		var empty T
 		select {
 		case <-ctx.Done():
@@ -26,5 +24,5 @@ func (r resultMapChan[S, T]) UnpackResult() (interface{}, error) {
 		case in := <-r.ch:
 			return r.f(in)
 		}
-	}), nil
+	}, nil
 }

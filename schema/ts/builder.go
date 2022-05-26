@@ -8,56 +8,23 @@ import (
 	"github.com/housecanary/gq/schema"
 )
 
-type BuilderModule interface {
-	namePrefix() string
-	types() []builderType
-}
-
 type builderType interface {
 	describe() string
-	parse(namePrefix string) (string, reflect.Type, error)
+	parse(namePrefix string) (*gqlTypeInfo, reflect.Type, error)
 	build(c *buildContext, sb *schema.Builder) error
 }
 
-// NewSchemaBuilder creates a schema.Builder from a set of ts modules.
-func NewSchemaBuilder(mods ...BuilderModule) (*schema.Builder, error) {
-	bc := newBuildContext()
-	sb := schema.NewBuilder()
-	var allTypes []builderType
-	for _, mod := range append(mods, BuiltinTypes) {
-		types := mod.types()
-		for _, bt := range types {
-			name, goType, err := bt.parse(mod.namePrefix())
-			if err != nil {
-				return nil, fmt.Errorf("cannot parse type %s: %w", bt.describe(), err)
-			}
-			st := &ast.SimpleType{Name: name}
-			bc.goTypeToSchemaType[goType] = st
-		}
-		allTypes = append(allTypes, types...)
-	}
-
-	// TODO: should we allow the same type to be registered in multiple modules
-
-	for _, bt := range allTypes {
-		err := bt.build(bc, sb)
-		if err != nil {
-			return nil, fmt.Errorf("cannot build type %s: %w", bt.describe(), err)
-		}
-	}
-
-	return sb, nil
-}
-
 type buildContext struct {
-	goTypeToSchemaType map[reflect.Type]ast.Type
+	goTypeToSchemaType map[reflect.Type]*gqlTypeInfo
 	implements         map[string]map[reflect.Type]string
+	objectTypes        map[reflect.Type]map[string]*fieldRuntimeInfo
 }
 
 func newBuildContext() *buildContext {
 	return &buildContext{
-		make(map[reflect.Type]ast.Type),
+		make(map[reflect.Type]*gqlTypeInfo),
 		make(map[string]map[reflect.Type]string),
+		make(map[reflect.Type]map[string]*fieldRuntimeInfo),
 	}
 }
 
@@ -69,11 +36,11 @@ func (c *buildContext) astTypeForGoType(typ reflect.Type) (ast.Type, error) {
 		}
 		return &ast.ListType{Of: refType}, nil
 	}
-	st, ok := c.goTypeToSchemaType[typ]
+	gqlType, ok := c.goTypeToSchemaType[typ]
 	if !ok {
 		return nil, fmt.Errorf("type %s not registered", typeDesc(typ))
 	}
-	return st, nil
+	return gqlType.astType, nil
 }
 
 func (c *buildContext) checkTypeCompatible(typ reflect.Type, astType ast.Type) error {
@@ -116,4 +83,30 @@ func (c *buildContext) getInterfaceImplementationMap(iname string) map[reflect.T
 		c.implements[iname] = m
 	}
 	return m
+}
+
+func (c *buildContext) registerObjectField(oTyp reflect.Type, fName string, fi *fieldRuntimeInfo) {
+	oFields, ok := c.objectTypes[oTyp]
+	if !ok {
+		oFields = make(map[string]*fieldRuntimeInfo)
+		c.objectTypes[oTyp] = oFields
+	}
+
+	oFields[fName] = fi
+}
+
+type gqlTypeKind int
+
+const (
+	kindEnum gqlTypeKind = iota + 1
+	kindInputObject
+	kindInterface
+	kindObject
+	kindScalar
+	kindUnion
+)
+
+type gqlTypeInfo struct {
+	astType ast.Type
+	kind    gqlTypeKind
 }
