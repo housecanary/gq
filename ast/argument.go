@@ -43,6 +43,18 @@ func (v Arguments) MarshalGraphQL(w io.Writer) error {
 	return nil
 }
 
+// ByName finds the argument with the given name, setting found to indicate if it was found
+func (v Arguments) ByName(name string) (argument *Argument, found bool) {
+	for _, a := range v {
+		if a.Name == name {
+			argument = a
+			found = true
+			return
+		}
+	}
+	return
+}
+
 type Argument struct {
 	Name  string
 	Value Value

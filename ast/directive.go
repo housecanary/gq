@@ -28,6 +28,18 @@ func (v Directives) MarshalGraphQL(w io.Writer) error {
 	return nil
 }
 
+// ByName finds the directive with the given name, setting found to indicate if it was found
+func (v Directives) ByName(name string) (directive *Directive, found bool) {
+	for _, d := range v {
+		if d.Name == name {
+			directive = d
+			found = true
+			return
+		}
+	}
+	return
+}
+
 type Directive struct {
 	Name      string
 	Arguments Arguments

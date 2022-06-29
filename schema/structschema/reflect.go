@@ -41,6 +41,8 @@ func (q *typeQueue) push(v reflect.Type) {
 func flatFields(typ reflect.Type) []reflect.StructField {
 	names := make(map[string]bool)
 	queue := typeQueue{typ}
+	result := make([]reflect.StructField, 0)
+	rootTyp := typ
 	for ptyp := queue.pop(); ptyp != nil; ptyp = queue.pop() {
 		typ := *ptyp
 		for i := 0; i < typ.NumField(); i++ {
@@ -57,19 +59,16 @@ func flatFields(typ reflect.Type) []reflect.StructField {
 				queue.push(f.Type)
 				continue
 			} else {
-				names[f.Name] = true
+				if _, alreadySeen := names[f.Name]; !alreadySeen {
+					names[f.Name] = true
+					f, ok := rootTyp.FieldByName(f.Name)
+					if ok {
+						result = append(result, f)
+					}
+				}
 			}
 		}
 	}
-
-	result := make([]reflect.StructField, 0, len(names))
-	for k := range names {
-		f, ok := typ.FieldByName(k)
-		if ok {
-			result = append(result, f)
-		}
-	}
-
 	return result
 }
 
