@@ -496,6 +496,14 @@ func (v *Float) Scan(src interface{}) error {
 
 		*v = Float{v: f, present: true}
 		return nil
+	case string:
+		f, err := strconv.ParseFloat(t, 64)
+		if err != nil {
+			return fmt.Errorf("cannot scan value string (%v) to a float", src)
+		}
+
+		*v = Float{v: f, present: true}
+		return nil
 	}
 	return fmt.Errorf("Cannot scan value %v to a float", src)
 }
