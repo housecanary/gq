@@ -1,7 +1,7 @@
-// Code generated from /Users/mpoindexter/dev/gq/grammar/Graphql.g4 by ANTLR 4.10.1. DO NOT EDIT.
+// Code generated from /Users/mpoindexter/dev/gq/grammar/Graphql.g4 by ANTLR 4.12.0. DO NOT EDIT.
 
 package gen // Graphql
-import "github.com/antlr/antlr4/runtime/Go/antlr"
+import "github.com/antlr/antlr4/runtime/Go/antlr/v4"
 
 // BaseGraphqlListener is a complete listener for a parse tree produced by GraphqlParser.
 type BaseGraphqlListener struct{}

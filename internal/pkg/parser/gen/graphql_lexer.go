@@ -1,4 +1,4 @@
-// Code generated from /Users/mpoindexter/dev/gq/grammar/Graphql.g4 by ANTLR 4.10.1. DO NOT EDIT.
+// Code generated from /Users/mpoindexter/dev/gq/grammar/Graphql.g4 by ANTLR 4.12.0. DO NOT EDIT.
 
 package gen
 
@@ -7,7 +7,7 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/antlr/antlr4/runtime/Go/antlr"
+	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 )
 
 func isDigit(c int) bool {

@@ -365,7 +365,9 @@ partialInputObjectTypeDefinition :
 partialInputValueDefinition : 
     description? name ':' gqlType defaultValue? directives? |
     description? name defaultValue? directives? |
-    description? ':' gqlType defaultValue? directives?;
+    description? ':' gqlType defaultValue? directives? |
+    description? defaultValue directives? |
+    description? directives;
 
 partialEnumTypeDefinition :
     description? ENUM name directives? enumValueDefinitions |

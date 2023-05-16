@@ -17,7 +17,7 @@ package parser
 import (
 	"sync"
 
-	"github.com/antlr/antlr4/runtime/Go/antlr"
+	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 
 	"github.com/housecanary/gq/internal/pkg/parser/gen"
 )
