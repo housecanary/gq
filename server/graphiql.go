@@ -38,25 +38,29 @@ add "&raw" to the end of the URL within a browser.
 <html>
 <head>
   <style>
-    html, body {
-      height: 100%;
+    body {
+      height: 100vh;
       margin: 0;
       overflow: hidden;
-      width: 100%;
     }
-    #graphiql {
+    #splash {
       height: 100vh;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      font-family: sans-serif;
+      justify-content: center;
+      text-align: center;
     }
   </style>
   <meta name="referrer" content="no-referrer">
   <link href="//cdnjs.cloudflare.com/ajax/libs/graphiql/{{.GraphiQLVersion}}/graphiql.css" rel="stylesheet" />
-  <script src="//cdnjs.cloudflare.com/ajax/libs/fetch/2.0.3/fetch.min.js"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/react/16.2.0/umd/react.production.min.js"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/react-dom/16.2.0/umd/react-dom.production.min.js"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/graphiql/{{.GraphiQLVersion}}/graphiql.min.js"></script>
 </head>
 <body>
-  <div id="graphiql">Loading...</div>
+  <div id="splash">Loading...</div>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/graphiql/{{.GraphiQLVersion}}/graphiql.min.js"></script>
   <script>
     // Collect the URL parameters
     var parameters = {};
@@ -94,12 +98,13 @@ add "&raw" to the end of the URL within a browser.
     var fetchURL = locationQuery(otherParams);
 
     // Defines a GraphQL fetcher using the fetch API.
-    function graphQLFetcher(graphQLParams) {
+    function graphQLFetcher(graphQLParams, options) {
       return fetch(fetchURL, {
         method: 'post',
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...options.headers,
         },
         body: JSON.stringify(graphQLParams),
         credentials: 'include',
@@ -147,7 +152,7 @@ add "&raw" to the end of the URL within a browser.
         operationName: {{.OperationName}},
         response: {{.Response}},
       }),
-      document.getElementById('graphiql')
+      document.body,
     );
   </script>
 </body>

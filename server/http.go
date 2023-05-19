@@ -347,7 +347,7 @@ func (h *GraphQLHandler) writeSingleRequestResult(w http.ResponseWriter, req *ht
 	if isGraphiQL {
 		w.Header().Set("Content-Type", "text/html;charset=utf-8")
 		graphiQLTemplate.Execute(w, &graphiQLParams{
-			GraphiQLVersion: "0.12.0",
+			GraphiQLVersion: "2.3.0",
 			Query:           gqlRequest.Query,
 			OperationName:   gqlRequest.OperationName,
 			Variables:       string(gqlRequest.Variables),
