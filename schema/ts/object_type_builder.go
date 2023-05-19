@@ -56,7 +56,7 @@ func (b *objectTypeBuilder[O]) build(c *buildContext, sb *schema.Builder) error 
 	for _, fieldType := range b.ot.fields {
 		def, typeInferred, err := fieldType.buildFieldDef(c)
 		if err != nil {
-			return fmt.Errorf("error processing field %s: %w", fieldType.def, err)
+			return fmt.Errorf("error processing field %s: %w", fieldType.originalDefinition(), err)
 		}
 		fields[def.Name] = append(fields[def.Name], &fieldInfo{def, typeInferred, fieldType})
 	}

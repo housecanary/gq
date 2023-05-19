@@ -30,100 +30,113 @@ func (q *Query) resolveHuman(li *lookupInput) (*human, error) {
 	return nil, fmt.Errorf("Must supply either id or name to lookup")
 }
 
-var queryType = ts.Object(
-	modType,
+type humanArgs struct {
+	Lookup *lookupInput
+}
+
+type humansArgs struct {
+	Lookups []*lookupInput
+}
+
+type droidArgs struct {
+	Lookup *lookupInput
+}
+
+type heroArgs struct {
+	Episode Episode
+}
+
+var queryType = ts.NewObjectType[Query](
+	starwarsModule,
 	`"Information about Star Wars"`,
+)
 
-	ts.Field(
-		`
-		"A random human or droid.  Selected by a fair roll of a die."
-		random
-		`,
-		func(q *Query) ts.Result[humanOrDroid] {
-			return result.Of(humanOrDroidFromHuman(&human{
-				ID:   types.NewID("random one"),
-				Name: types.NewString("John Q Random"),
-			}))
-		},
-	),
+var randomField = ts.AddField(
+	queryType,
+	`
+	"A random human or droid.  Selected by a fair roll of a die."
+	random
+	`,
+	func(q *Query) ts.Result[humanOrDroid] {
+		return result.Of(humanOrDroidFromHuman(&human{
+			ID:   types.NewID("random one"),
+			Name: types.NewString("John Q Random"),
+		}))
+	},
+)
 
-	ts.FieldA(
-		`
-		"A human by their unique ID or name"
-		human
-		`,
-		func(q *Query, args *struct {
-			Lookup *lookupInput
-		}) ts.Result[*human] {
-			return result.Wrap(q.resolveHuman(args.Lookup))
-		},
-	),
+var humanField = ts.AddFieldWithArgs(
+	queryType,
+	`
+	"A human by their unique ID or name"
+	human
+	`,
+	func(q *Query, args *humanArgs) ts.Result[*human] {
+		return result.Wrap(q.resolveHuman(args.Lookup))
+	},
+)
 
-	ts.FieldA(
-		`
-		"Humans by their unique ID or name"
-		humans
-		`,
-		func(q *Query, args *struct {
-			Lookups []*lookupInput
-		}) ts.Result[[]*human] {
-			var humans []*human
-			for _, li := range args.Lookups {
-				h, err := q.resolveHuman(li)
-				if err != nil {
-					return result.Error[[]*human](err)
+var humansField = ts.AddFieldWithArgs(
+	queryType,
+	`
+	"Humans by their unique ID or name"
+	humans
+	`,
+	func(q *Query, args *humansArgs) ts.Result[[]*human] {
+		var humans []*human
+		for _, li := range args.Lookups {
+			h, err := q.resolveHuman(li)
+			if err != nil {
+				return result.Error[[]*human](err)
+			}
+			humans = append(humans, h)
+		}
+		return result.Of(humans)
+	},
+)
+
+var droidField = ts.AddFieldWithArgs(
+	queryType,
+	`
+	"A droid by their unique ID or name"
+	droid
+	`,
+	func(q *Query, args *droidArgs) ts.Result[*droid] {
+		lookup := args.Lookup
+
+		if !lookup.ID.Nil() {
+			return result.Of(droids[lookup.ID.String()])
+		}
+
+		if !lookup.Name.Nil() {
+			for _, v := range droids {
+				if v.Name == lookup.Name {
+					return result.Of(v)
 				}
-				humans = append(humans, h)
 			}
-			return result.Of(humans)
-		},
-	),
+			return result.Of((*droid)(nil))
+		}
 
-	ts.FieldA(
-		`
-		"A droid by their unique ID or name"
-		droid
-		`,
-		func(q *Query, args *struct {
-			Lookup *lookupInput
-		}) ts.Result[*droid] {
-			lookup := args.Lookup
+		return result.Error[*droid](fmt.Errorf("Must supply either id or name to lookup"))
+	},
+)
 
-			if !lookup.ID.Nil() {
-				return result.Of(droids[lookup.ID.String()])
-			}
+var heroField = ts.AddFieldWithArgs(
+	queryType,
+	`
+	"The hero of an episode"
+	hero
+	`,
+	func(q *Query, args *heroArgs) ts.Result[character] {
+		c := make(chan character, 1)
+		e := make(chan error)
+		switch args.Episode {
+		case "NEWHOPE":
+			c <- characterFromHuman(humans["h1"])
+		default:
+			c <- characterType.Nil()
+		}
 
-			if !lookup.Name.Nil() {
-				for _, v := range droids {
-					if v.Name == lookup.Name {
-						return result.Of(v)
-					}
-				}
-				return result.Of((*droid)(nil))
-			}
-
-			return result.Error[*droid](fmt.Errorf("Must supply either id or name to lookup"))
-		},
-	),
-
-	ts.FieldA(
-		`
-		"The hero of an episode"
-		hero
-		`,
-		func(q *Query, args *struct {
-			Episode Episode
-		}) ts.Result[character] {
-			c := make(chan character, 1)
-			e := make(chan error)
-			switch args.Episode {
-			case "NEWHOPE":
-				c <- characterFromHuman(humans["h1"])
-			default:
-				c <- characterType.Nil()
-			}
-
-			return result.Chans(c, e)
-		},
-	),
+		return result.Chans(c, e)
+	},
 )

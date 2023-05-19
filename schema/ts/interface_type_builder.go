@@ -11,7 +11,7 @@ import (
 	"github.com/housecanary/gq/schema"
 )
 
-type interfaceTypeBuilder[I InterfaceBoxT] struct {
+type interfaceTypeBuilder[I InterfaceT] struct {
 	it  *InterfaceType[I]
 	def *ast.InterfaceTypeDefinition
 }
@@ -43,7 +43,7 @@ func (b *interfaceTypeBuilder[I]) parse(namePrefix string) (*gqlTypeInfo, reflec
 func (b *interfaceTypeBuilder[I]) build(c *buildContext, sb *schema.Builder) error {
 	typeNameMap := c.getInterfaceImplementationMap(b.def.Name)
 	tb := sb.AddInterfaceType(b.def.Name, func(ctx context.Context, value interface{}) (interface{}, string) {
-		ib := (InterfaceBox)(value.(I))
+		ib := (Interface)(value.(I))
 		if ib.objectType == nil {
 			return nil, ""
 		}

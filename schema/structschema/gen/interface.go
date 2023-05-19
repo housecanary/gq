@@ -54,6 +54,7 @@ func (c *genCtx) processInterfaceType(typ *types.Named) (*interfaceMeta, error) 
 		},
 		GQL:           td,
 		InterfaceType: f.field.Type(),
+		OriginalTag:   f.tag,
 	}
 	c.meta[td.Name] = meta
 	return meta, nil

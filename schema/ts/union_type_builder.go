@@ -9,7 +9,7 @@ import (
 	"github.com/housecanary/gq/schema"
 )
 
-type unionTypeBuilder[U UnionBoxT] struct {
+type unionTypeBuilder[U UnionT] struct {
 	ut  *UnionType[U]
 	def *ast.BasicTypeDefinition
 }
@@ -36,7 +36,7 @@ func (b *unionTypeBuilder[U]) build(c *buildContext, sb *schema.Builder) error {
 	}
 
 	tb := sb.AddUnionType(b.def.Name, members, func(ctx context.Context, value interface{}) (interface{}, string) {
-		ub := (UnionBox)(value.(U))
+		ub := (Union)(value.(U))
 		if ub.objectType == nil {
 			return nil, ""
 		}

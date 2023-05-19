@@ -5,11 +5,11 @@ import (
 	"github.com/housecanary/gq/types"
 )
 
-var modType = ts.Module()
+var starwarsModule = ts.NewModule()
 
-type character ts.InterfaceBox
+type character ts.Interface
 
-var characterType = ts.Interface[character](modType, `"A character.  Could be human, alien, droid, etc." {
+var characterType = ts.NewInterfaceType[character](starwarsModule, `"A character.  Could be human, alien, droid, etc." {
 	"The id of the character."
 	id: ID!
 
@@ -27,7 +27,7 @@ type human struct {
 	HomePlanet      types.String
 }
 
-var humanType = ts.Object[human](modType, `"A humanoid character" Human`)
+var humanType = ts.NewObjectType[human](starwarsModule, `"A humanoid character" Human`)
 
 var characterFromHuman = ts.Implements(humanType, characterType)
 
@@ -38,13 +38,13 @@ type droid struct {
 	PrimaryFunction types.String
 }
 
-var droidType = ts.Object[droid](modType, `"A mechanical character"`)
+var droidType = ts.NewObjectType[droid](starwarsModule, `"A mechanical character"`)
 
 var characterFromDroid = ts.Implements(droidType, characterType)
 
-type humanOrDroid ts.UnionBox
+type humanOrDroid ts.Union
 
-var humanOrDroidType = ts.Union[humanOrDroid](modType, `
+var humanOrDroidType = ts.NewUnionType[humanOrDroid](starwarsModule, `
 	"Either a human or a droid"
 `)
 
@@ -58,4 +58,4 @@ type lookupInput struct {
 	Name types.String
 }
 
-var lookupInputType = ts.InputObject[lookupInput](modType, `"Either a name or a id"`)
+var lookupInputType = ts.NewInputObjectType[lookupInput](starwarsModule, `"Either a name or a id"`)

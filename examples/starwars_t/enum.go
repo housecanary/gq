@@ -6,7 +6,7 @@ import (
 
 type Episode string
 
-var episodeType = ts.Enum[Episode](modType, `"All of the episodes that count"`)
+var episodeType = ts.NewEnumType[Episode](starwarsModule, `"All of the episodes that count"`)
 
 var (
 	EpisodeNewHope = episodeType.Value(`

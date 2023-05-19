@@ -6,9 +6,9 @@ import (
 )
 
 func TestObjectFieldResolvers(t *testing.T) {
-	m := Module()
+	m := NewModule()
 
-	ot := Object[struct {
+	ot := NewObjectType[struct {
 		AsStruct testObject
 		AsPtr    *testObject
 		Enum     testEnum

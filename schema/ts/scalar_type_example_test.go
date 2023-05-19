@@ -8,7 +8,7 @@ import (
 	"github.com/housecanary/gq/schema/ts"
 )
 
-var scalarModType = ts.Module()
+var scalarModType = ts.NewModule()
 
 // To create an scalar type, first define the type that will hold your value.
 // The type must implement schema.ScalarMarshaler for the value and schema.ScalarUnmarshaler
@@ -39,10 +39,10 @@ func (v *DateTime) FromLiteralValue(l schema.LiteralValue) error {
 	}
 }
 
-// Next, construct the GQL type using the ts.Scalar function
-var dateType = ts.Scalar[DateTime](scalarModType, `"An ISO format datetime."`)
+// Next, construct the GQL type using the ts.NewScalarType function
+var dateType = ts.NewScalarType[DateTime](scalarModType, `"An ISO format datetime."`)
 
-func ExampleScalar() {
+func ExampleNewScalarType() {
 	// Once the scalar type is registered, it can be used in arguments, as a struct field, etc
 	// just like any of the built in types
 }

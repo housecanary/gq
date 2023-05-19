@@ -54,8 +54,9 @@ func (c *genCtx) processUnionType(typ *types.Named) (*unionMeta, error) {
 			name:      td.Name,
 			namedType: typ,
 		},
-		GQL:       td,
-		UnionType: f.field.Type(),
+		GQL:         td,
+		UnionType:   f.field.Type(),
+		OriginalTag: f.tag,
 	}
 	c.meta[td.Name] = meta
 	return meta, nil

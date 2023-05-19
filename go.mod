@@ -1,6 +1,6 @@
 module github.com/housecanary/gq
 
-go 1.17
+go 1.20
 
 require (
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230512164433-5d1fd1a340c9

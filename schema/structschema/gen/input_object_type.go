@@ -34,7 +34,7 @@ func (c *genCtx) processInputObjectType(typ *types.Named) (*inputObjMeta, error)
 	structTyp := typ.Underlying().(*types.Struct)
 	for i := 0; i < structTyp.NumFields(); i++ {
 		f := structTyp.Field(i)
-		if isSSMetaType(f.Type()) {
+		if isSSInputObjectType(f.Type()) {
 			gqlTypeDef, err := parser.ParsePartialInputObjectTypeDefinition(structTyp.Tag(i))
 			if err != nil {
 				return nil, fmt.Errorf("Cannot parse GQL metadata for object %s: %v", typ.Obj().Name(), err)

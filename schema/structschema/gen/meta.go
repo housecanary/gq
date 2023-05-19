@@ -149,6 +149,7 @@ type interfaceMeta struct {
 	baseMeta
 	GQL           *ast.InterfaceTypeDefinition
 	InterfaceType types.Type
+	OriginalTag   string
 }
 
 func (m *interfaceMeta) Kind() typeKind {
@@ -157,8 +158,9 @@ func (m *interfaceMeta) Kind() typeKind {
 
 type unionMeta struct {
 	baseMeta
-	GQL       *ast.UnionTypeDefinition
-	UnionType types.Type
+	GQL         *ast.UnionTypeDefinition
+	UnionType   types.Type
+	OriginalTag string
 }
 
 func (m *unionMeta) Kind() typeKind {

@@ -8,7 +8,6 @@ import (
 	"github.com/housecanary/gq/ast"
 	"github.com/housecanary/gq/internal/pkg/parser"
 	"github.com/housecanary/gq/schema"
-	"github.com/housecanary/gq/schema/ts/result"
 )
 
 // A Result is a value returned from a resolver function that encapsulates the
@@ -22,14 +21,19 @@ type Result[T any] interface {
 
 // A FieldType represents the GQL type of a virtual field on an object fulfilled
 // by invoking a method
-type FieldType[O any] struct {
-	def          string
-	rType        reflect.Type
-	aType        reflect.Type
-	makeResolver func(c *buildContext) (schema.Resolver, fieldInvoker, error)
+type FieldType[R any] struct {
+	def              string
+	rType            reflect.Type
+	aType            reflect.Type
+	ResolverFunction R
+	makeResolver     func(c *buildContext) (schema.Resolver, fieldInvoker, error)
 }
 
-func (ft *FieldType[O]) buildFieldDef(c *buildContext) (*ast.FieldDefinition, bool, error) {
+func (ft *FieldType[R]) originalDefinition() string {
+	return ft.def
+}
+
+func (ft *FieldType[R]) buildFieldDef(c *buildContext) (*ast.FieldDefinition, bool, error) {
 	fd, err := parser.ParseTSResolverFieldDefinition(ft.def)
 	if err != nil {
 		return nil, false, err
@@ -61,118 +65,20 @@ func (ft *FieldType[O]) buildFieldDef(c *buildContext) (*ast.FieldDefinition, bo
 			if err != nil {
 				return nil, false, fmt.Errorf("cannot parse input argument %s: %w", field.Name, err)
 			}
+
 			if ad == nil {
 				continue
 			}
+
+			if _, isInjected := ad.Directives.ByName("inject"); isInjected {
+				continue
+			}
+
 			fd.ArgumentsDefinition = append(fd.ArgumentsDefinition, ad)
 		}
 	}
 
 	return fd, wasTypeInferred, nil
-}
-
-// Field creates a new field resolved by a method taking a source object
-func Field[R, O any](def string, rf func(*O) Result[R]) *FieldType[O] {
-	return &FieldType[O]{
-		def:   def,
-		rType: typeOf[R](),
-		makeResolver: func(c *buildContext) (schema.Resolver, fieldInvoker, error) {
-			resolver := schema.SimpleResolver(func(v interface{}) (interface{}, error) {
-				return returnResult(rf(v.(*O)))
-			})
-
-			invoker := func(q QueryInfo, o interface{}) interface{} {
-				return rf(o.(*O))
-			}
-
-			return resolver, invoker, nil
-		},
-	}
-}
-
-// FieldA creates a new field resolved by a method taking a source object and arguments
-func FieldA[R, A, O any](def string, rf func(*O, *A) Result[R]) *FieldType[O] {
-	return &FieldType[O]{
-		def:   def,
-		rType: typeOf[R](),
-		aType: typeOf[A](),
-		makeResolver: func(c *buildContext) (schema.Resolver, fieldInvoker, error) {
-			bindArgs, err := makeArgBinder[A](c)
-			if err != nil {
-				return nil, nil, err
-			}
-			resolver := schema.FullResolver(func(ctx schema.ResolverContext, v interface{}) (interface{}, error) {
-				var args A
-				if err := bindArgs(queryInfo{ctx}, &args); err != nil {
-					var empty R
-					return empty, err
-				}
-				return returnResult(rf(v.(*O), &args))
-			})
-
-			invoker := func(q QueryInfo, o interface{}) interface{} {
-				var args A
-				if err := bindArgs(q, &args); err != nil {
-					return result.Error[R](err)
-				}
-				return rf(o.(*O), &args)
-			}
-
-			return resolver, invoker, nil
-		},
-	}
-}
-
-// FieldQ creates a new field resolved by a method taking a source object and query info
-func FieldQ[R, O any](def string, rf func(QueryInfo, *O) Result[R]) *FieldType[O] {
-	return &FieldType[O]{
-		def:   def,
-		rType: typeOf[R](),
-		makeResolver: func(c *buildContext) (schema.Resolver, fieldInvoker, error) {
-			resolver := schema.FullResolver(func(ctx schema.ResolverContext, v interface{}) (interface{}, error) {
-				return returnResult(rf(queryInfo{ctx}, v.(*O)))
-			})
-
-			invoker := func(q QueryInfo, o interface{}) interface{} {
-				return rf(q, o.(*O))
-			}
-
-			return resolver, invoker, nil
-		},
-	}
-}
-
-// FieldQA creates a new field resolved by a method taking a source object, arguments and query info
-func FieldQA[R, A, O any](def string, rf func(QueryInfo, *O, *A) Result[R]) *FieldType[O] {
-	return &FieldType[O]{
-		def:   def,
-		rType: typeOf[R](),
-		aType: typeOf[A](),
-		makeResolver: func(c *buildContext) (schema.Resolver, fieldInvoker, error) {
-			bindArgs, err := makeArgBinder[A](c)
-			if err != nil {
-				return nil, nil, err
-			}
-			resolver := schema.FullResolver(func(ctx schema.ResolverContext, v interface{}) (interface{}, error) {
-				var args A
-				if err := bindArgs(queryInfo{ctx}, &args); err != nil {
-					var empty R
-					return empty, err
-				}
-				return returnResult(rf(queryInfo{ctx}, v.(*O), &args))
-			})
-
-			invoker := func(q QueryInfo, o interface{}) interface{} {
-				var args A
-				if err := bindArgs(q, &args); err != nil {
-					return result.Error[R](err)
-				}
-				return rf(q, o.(*O), &args)
-			}
-
-			return resolver, invoker, nil
-		},
-	}
 }
 
 type argBinder[A any] func(QueryInfo, *A) error
@@ -186,12 +92,27 @@ func makeArgBinder[A any](c *buildContext) (argBinder[A], error) {
 	fields := reflect.VisibleFields(typ)
 	binds := make([]func(QueryInfo, reflect.Value) error, 0, len(fields))
 	for _, field := range fields {
+		field := field
 		ad, _, err := parseStructField(c, field, parser.ParsePartialInputValueDefinition)
 		if ad == nil {
 			continue
 		}
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse input argument %s: %w", field.Name, err)
+		}
+
+		if injectDirective, isInjected := ad.Directives.ByName("inject"); isInjected {
+			provider, ok := c.providers[field.Type]
+			if !ok {
+				return nil, fmt.Errorf("No provider registered for type %v", field.Type)
+			}
+
+			binds = append(binds, func(qi QueryInfo, v reflect.Value) error {
+				av := provider(qi, injectDirective.Arguments)
+				v.FieldByIndex(field.Index).Set(reflect.ValueOf(av))
+				return nil
+			})
+			continue
 		}
 
 		binds = append(binds, func(qi QueryInfo, v reflect.Value) error {

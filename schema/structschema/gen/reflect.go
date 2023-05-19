@@ -46,8 +46,7 @@ func flatFields(typ *types.Named) []*fieldInfo {
 	names := make(map[string]bool)
 	queue := typeQueue{typ}
 	for ptyp := queue.pop(); ptyp != nil; ptyp = queue.pop() {
-		typ := *ptyp
-		structTyp := typ.Underlying().(*types.Struct)
+		structTyp := ptyp.Underlying().(*types.Struct)
 		for i := 0; i < structTyp.NumFields(); i++ {
 			f := structTyp.Field(i)
 			if isSSMetaType(f.Type()) {
@@ -88,8 +87,7 @@ func flatEmbeddedFieldsWithMeta(typ *types.Named) []*fieldInfo {
 	names := make(map[string]bool)
 	queue := typeQueue{typ}
 	for ptyp := queue.pop(); ptyp != nil; ptyp = queue.pop() {
-		typ := *ptyp
-		structTyp := typ.Underlying().(*types.Struct)
+		structTyp := ptyp.Underlying().(*types.Struct)
 		for i := 0; i < structTyp.NumFields(); i++ {
 			f := structTyp.Field(i)
 			if isSSMetaType(f.Type()) {

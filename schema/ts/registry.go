@@ -15,11 +15,23 @@ type TypeRegistry struct {
 }
 
 // NewTypeRegistry creates a schema.Builder from a set of ts modules.
-func NewTypeRegistry(mods ...*ModuleType) (*TypeRegistry, error) {
-	bc := newBuildContext()
+func NewTypeRegistry(opts ...TypeRegistryOption) (*TypeRegistry, error) {
+	cnf := typeRegistryConfig{
+		providers: make(map[reflect.Type]func(QueryInfo, ast.Arguments) any),
+	}
+
+	WithProvider(func(qi QueryInfo) QueryInfo {
+		return qi
+	}).apply(&cnf)
+
+	for _, opt := range opts {
+		opt.apply(&cnf)
+	}
+
+	bc := newBuildContext(cnf.providers)
 	sb := schema.NewBuilder()
 	var allTypes []builderType
-	for _, mod := range append(mods, BuiltinTypes) {
+	for _, mod := range append(cnf.mods, BuiltinTypes) {
 		types := mod.elements
 		for _, bt := range types {
 			gqlType, goType, err := bt.parse(mod.typePrefix)
@@ -124,6 +136,46 @@ func (ts *TypeRegistry) getFieldRuntimeInfo(typ reflect.Type, name string) (*fie
 		return nil, fmt.Errorf("field %s does not exist", name)
 	}
 	return fi, nil
+}
+
+type TypeRegistryOption interface {
+	apply(config *typeRegistryConfig)
+}
+
+type typeRegistryConfig struct {
+	mods      []*Module
+	providers map[reflect.Type]func(QueryInfo, ast.Arguments) any
+}
+
+type typeRegistryOptionFunc func(config *typeRegistryConfig)
+
+func (f typeRegistryOptionFunc) apply(config *typeRegistryConfig) {
+	f(config)
+}
+
+// WithModule adds a module to the type registry
+func WithModule(mod *Module) TypeRegistryOption {
+	return typeRegistryOptionFunc(func(config *typeRegistryConfig) {
+		config.mods = append(config.mods, mod)
+	})
+}
+
+// WithProvider adds a provider for type T
+func WithProvider[T any](f func(QueryInfo) T) TypeRegistryOption {
+	return typeRegistryOptionFunc(func(config *typeRegistryConfig) {
+		config.providers[typeOf[T]()] = func(qi QueryInfo, a ast.Arguments) any {
+			return f(qi)
+		}
+	})
+}
+
+// WithProviderWithArgs adds a provider for type T
+func WithProviderWithArgs[T any](f func(QueryInfo, ast.Arguments) T) TypeRegistryOption {
+	return typeRegistryOptionFunc(func(config *typeRegistryConfig) {
+		config.providers[typeOf[T]()] = func(qi QueryInfo, a ast.Arguments) any {
+			return f(qi, a)
+		}
+	})
 }
 
 type QueryFieldSelection struct {

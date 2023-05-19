@@ -8,7 +8,7 @@ import (
 	"github.com/housecanary/gq/types"
 )
 
-var objectModType = ts.Module()
+var objectModType = ts.NewModule()
 
 // To create an object type, declare a struct that represents the
 // shape of the GraphQL object.
@@ -62,69 +62,76 @@ type Catalog struct {
 // The fields of the struct can be annotated with gq struct tags to control argument
 // types and naming.
 
-var catalogType = ts.Object[Catalog](
-	objectModType, `"A product catalog"`,
+var catalogType = ts.NewObjectType[Catalog](objectModType, `"A product catalog"`)
 
-	// A field computed from the object
-	ts.Field(
-		`
-		"Images of all pages in the catalog"
-		pageImageUrls
-		`,
-		func(c *Catalog) ts.Result[[]types.String] {
-			pageImagesUrlResult := loadPageImages(c.ID.String())
+// A computed field
+var catalogPageImageUrlsField = ts.AddField(
+	catalogType,
+	`
+	"Images of all pages in the catalog"
+	pageImageUrls
+	`,
+	func(c *Catalog) ts.Result[[]types.String] {
+		pageImagesUrlResult := loadPageImages(c.ID.String())
 
-			return result.MapChan(pageImagesUrlResult, func(in []string) ([]types.String, error) {
-				out := make([]types.String, len(in))
-				for i, url := range in {
-					out[i] = types.NewString(url)
-				}
-				return out, nil
+		return result.MapChan(pageImagesUrlResult, func(in []string) ([]types.String, error) {
+			out := make([]types.String, len(in))
+			for i, url := range in {
+				out[i] = types.NewString(url)
+			}
+			return out, nil
+		})
+	},
+)
+
+type pageImageUrlArgs struct {
+	PageNumber types.Int `gq:":Int!"`
+}
+
+// A field with arguments
+var catalogPageImageUrlField = ts.AddFieldWithArgs(
+	catalogType,
+	`
+	"An image of a specific page"
+	pageImageUrl
+	`,
+	func(c *Catalog, args *pageImageUrlArgs) ts.Result[types.String] {
+		pageImageUrlResult, errors := loadPageImage(c.ID.String(), int(args.PageNumber.Int32()))
+		return result.Chans(pageImageUrlResult, errors)
+	},
+)
+
+type replacementArgs struct {
+	QueryInfo ts.QueryInfo `gq:"@inject"`
+}
+
+// A field with context info
+var catalogReplacementField = ts.AddFieldWithArgs(
+	catalogType,
+	`
+	"The next catalog that replaces this one"
+	replacement
+	`,
+	func(c *Catalog, a *replacementArgs) ts.Result[*Catalog] {
+		// Optimization: only load related catalog details if a field other than it's
+		// ID is selected
+		needLoadDetails := false
+		fi := a.QueryInfo.ChildFieldsIterator()
+		for fi.Next() {
+			if fi.Selection().Name != "id" {
+				needLoadDetails = true
+				break
+			}
+		}
+
+		if !needLoadDetails {
+			return result.Of(&Catalog{
+				ID: types.NewID(c.replacementID),
 			})
-		},
-	),
+		}
 
-	// A field with arguments
-	ts.FieldA(
-		`
-		"An image of a specific page"
-		pageImageUrl
-		`,
-		func(c *Catalog, args *struct {
-			PageNumber types.Int `gq:":Int!"`
-		}) ts.Result[types.String] {
-			pageImageUrlResult, errors := loadPageImage(c.ID.String(), int(args.PageNumber.Int32()))
-			return result.Chans(pageImageUrlResult, errors)
-		},
-	),
-
-	// A field with QueryInfo
-	ts.FieldQ(
-		`
-		"The next catalog that replaces this one"
-		replacement
-		`,
-		func(qi ts.QueryInfo, c *Catalog) ts.Result[*Catalog] {
-			// Optimization: only load related catalog details if a field other than it's
-			// ID is selected
-			needLoadDetails := false
-			fi := qi.ChildFieldsIterator()
-			for fi.Next() {
-				if fi.Selection().Name != "id" {
-					needLoadDetails = true
-					break
-				}
-			}
-
-			if !needLoadDetails {
-				return result.Of(&Catalog{
-					ID: types.NewID(c.replacementID),
-				})
-			}
-
-			return result.Chan(loadCatalog(c.replacementID))
-		},
-	),
+		return result.Chan(loadCatalog(c.replacementID))
+	},
 )
 
 func loadPageImages(id string) chan []string {
@@ -149,8 +156,13 @@ func loadCatalog(id string) chan struct {
 	return nil
 }
 
-func ExampleObject() {
+func ExampleNewObjectType() {
 	// Now the object can be used from GraphQL
 	//
 	// See the example above.
+
+	// for unit tests, etc it can be convenient to access the resolvers
+	// supplied to the field definitions
+	var testCatalog Catalog
+	catalogPageImageUrlsField.ResolverFunction(&testCatalog)
 }

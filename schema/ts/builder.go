@@ -18,13 +18,15 @@ type buildContext struct {
 	goTypeToSchemaType map[reflect.Type]*gqlTypeInfo
 	implements         map[string]map[reflect.Type]string
 	objectTypes        map[reflect.Type]map[string]*fieldRuntimeInfo
+	providers          map[reflect.Type]func(QueryInfo, ast.Arguments) any
 }
 
-func newBuildContext() *buildContext {
+func newBuildContext(providers map[reflect.Type]func(QueryInfo, ast.Arguments) any) *buildContext {
 	return &buildContext{
 		make(map[reflect.Type]*gqlTypeInfo),
 		make(map[string]map[reflect.Type]string),
 		make(map[reflect.Type]map[string]*fieldRuntimeInfo),
+		providers,
 	}
 }
 

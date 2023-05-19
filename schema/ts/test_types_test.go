@@ -1,24 +1,31 @@
 package ts
 
-import "testing"
+import (
+	"testing"
+)
 
-var testMod = Module()
+var testMod = NewModule()
 
 type testObject struct {
 	value string
 }
 
-var objectType = Object[testObject](testMod, ``)
+var objectType = NewObjectType[testObject](testMod, ``)
 
 type testEnum string
 
-var enumType = Enum[testEnum](testMod, ``)
+var enumType = NewEnumType[testEnum](testMod, ``)
 
 var testEnumA = enumType.Value(`A`)
 var testEnumB = enumType.Value(`B`)
 
-func mustBuildTypes(t *testing.T, mods ...*ModuleType) *TypeRegistry {
-	tr, err := NewTypeRegistry(append(mods, testMod)...)
+func mustBuildTypes(t *testing.T, mods ...*Module) *TypeRegistry {
+	var opts []TypeRegistryOption
+	for _, mod := range mods {
+		opts = append(opts, WithModule(mod))
+	}
+	opts = append(opts, WithModule(testMod))
+	tr, err := NewTypeRegistry(opts...)
 	if err != nil {
 		t.Fatal(err)
 	}

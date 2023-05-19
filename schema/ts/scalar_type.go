@@ -16,8 +16,8 @@ type ScalarType[S schema.ScalarMarshaler, PS ScalarUnmarshaller[S]] struct {
 	def string
 }
 
-// Scalar constructs a scalar type
-func Scalar[S schema.ScalarMarshaler, PS ScalarUnmarshaller[S]](mod *ModuleType, def string) *ScalarType[S, PS] {
+// NewScalarType constructs a scalar type
+func NewScalarType[S schema.ScalarMarshaler, PS ScalarUnmarshaller[S]](mod *Module, def string) *ScalarType[S, PS] {
 	st := &ScalarType[S, PS]{
 		def: def,
 	}

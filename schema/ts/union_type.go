@@ -4,14 +4,14 @@ import (
 	"reflect"
 )
 
-// An UnionBox is the base type to use for defining a GQL union
-type UnionBox struct {
+// An Union is the base type to use for defining a GQL union
+type Union struct {
 	unionElement interface{}
 	objectType   reflect.Type
 }
 
-// UnionBoxT is a type constraint that matches types derived from UnionBox
-type UnionBoxT interface {
+// UnionT is a type constraint that matches types derived from Union
+type UnionT interface {
 	~struct {
 		unionElement interface{}
 		objectType   reflect.Type
@@ -19,13 +19,13 @@ type UnionBoxT interface {
 }
 
 // A UnionType represents a GQL union type
-type UnionType[U UnionBoxT] struct {
+type UnionType[U UnionT] struct {
 	def     string
 	members []reflect.Type
 }
 
-// Union constructs a UnionType
-func Union[U UnionBoxT](mod *ModuleType, def string) *UnionType[U] {
+// NewUnionType constructs a UnionType
+func NewUnionType[U UnionT](mod *Module, def string) *UnionType[U] {
 	ut := &UnionType[U]{
 		def: def,
 	}
@@ -40,7 +40,7 @@ func (ut *UnionType[U]) Nil() U {
 }
 
 // UnionMember adds a member to the specified union, and returns a function used to construct a union value from that type.
-func UnionMember[O any, U UnionBoxT](ut *UnionType[U], ot *ObjectType[O]) func(*O) U {
+func UnionMember[O any, U UnionT](ut *UnionType[U], ot *ObjectType[O]) func(*O) U {
 	oTyp := typeOf[*O]()
 	ut.members = append(ut.members, oTyp)
 	return func(o *O) U {

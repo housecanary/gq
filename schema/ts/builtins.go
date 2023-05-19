@@ -2,10 +2,10 @@ package ts
 
 import "github.com/housecanary/gq/types"
 
-var BuiltinTypes = Module()
+var BuiltinTypes = NewModule()
 
-var IDType = Scalar[types.ID](BuiltinTypes, "")
-var StringType = Scalar[types.String](BuiltinTypes, "")
-var IntType = Scalar[types.Int](BuiltinTypes, "")
-var FloatType = Scalar[types.Float](BuiltinTypes, "")
-var BooleanType = Scalar[types.Boolean](BuiltinTypes, "")
+var IDType = NewScalarType[types.ID](BuiltinTypes, "")
+var StringType = NewScalarType[types.String](BuiltinTypes, "")
+var IntType = NewScalarType[types.Int](BuiltinTypes, "")
+var FloatType = NewScalarType[types.Float](BuiltinTypes, "")
+var BooleanType = NewScalarType[types.Boolean](BuiltinTypes, "")

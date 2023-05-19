@@ -10,8 +10,8 @@ type EnumType[E ~string] struct {
 	valueDefs []string
 }
 
-// Enum creates an EnumType and registers it with the given module
-func Enum[E ~string](mod *ModuleType, def string) *EnumType[E] {
+// NewEnumType creates an EnumType and registers it with the given module
+func NewEnumType[E ~string](mod *Module, def string) *EnumType[E] {
 	et := &EnumType[E]{
 		def: def,
 	}

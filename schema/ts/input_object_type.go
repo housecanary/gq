@@ -5,8 +5,8 @@ type InputObjectType[O any] struct {
 	def string
 }
 
-// InputObject creates an InputObjectType and registers it with the given module
-func InputObject[O any](mod *ModuleType, def string) *InputObjectType[O] {
+// NewInputObjectType creates an InputObjectType and registers it with the given module
+func NewInputObjectType[O any](mod *Module, def string) *InputObjectType[O] {
 	it := &InputObjectType[O]{
 		def: def,
 	}

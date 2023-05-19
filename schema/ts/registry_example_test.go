@@ -7,7 +7,7 @@ import (
 	"github.com/housecanary/gq/schema/ts"
 )
 
-var queryMod = ts.Module()
+var queryMod = ts.NewModule()
 
 type query struct {
 	Catalog      *Catalog
@@ -18,10 +18,18 @@ type query struct {
 	DateTime     DateTime
 }
 
-var queryType = ts.Object[query](queryMod, ``)
+var queryType = ts.NewObjectType[query](queryMod, ``)
 
 func ExampleNewTypeRegistry() {
-	sb, err := ts.NewTypeRegistry(queryMod, enumModType, inputObjectModType, interfaceModType, objectModType, scalarModType, unionModType)
+	sb, err := ts.NewTypeRegistry(
+		ts.WithModule(queryMod),
+		ts.WithModule(enumModType),
+		ts.WithModule(inputObjectModType),
+		ts.WithModule(interfaceModType),
+		ts.WithModule(objectModType),
+		ts.WithModule(scalarModType),
+		ts.WithModule(unionModType),
+	)
 	if err != nil {
 		panic(err)
 	}

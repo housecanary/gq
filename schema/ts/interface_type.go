@@ -4,14 +4,14 @@ import (
 	"reflect"
 )
 
-// An InterfaceBox is the base type to use for defining a GQL interface
-type InterfaceBox struct {
+// An Interface is the base type to use for defining a GQL interface
+type Interface struct {
 	interfaceElement interface{}
 	objectType       reflect.Type
 }
 
-// InterfaceBoxT is a type constraint that matches types derived from InterfaceBox
-type InterfaceBoxT interface {
+// InterfaceT is a type constraint that matches types derived from Interface
+type InterfaceT interface {
 	~struct {
 		interfaceElement interface{}
 		objectType       reflect.Type
@@ -19,12 +19,12 @@ type InterfaceBoxT interface {
 }
 
 // An InterfaceType represents a GQL interface type
-type InterfaceType[I InterfaceBoxT] struct {
+type InterfaceType[I InterfaceT] struct {
 	def string
 }
 
-// Interface creates a new InterfaceType
-func Interface[I InterfaceBoxT](mod *ModuleType, def string) *InterfaceType[I] {
+// NewInterfaceType creates a new InterfaceType
+func NewInterfaceType[I InterfaceT](mod *Module, def string) *InterfaceType[I] {
 	it := &InterfaceType[I]{
 		def: def,
 	}
@@ -39,7 +39,7 @@ func (it *InterfaceType[I]) Nil() I {
 
 // Implements registers the given ObjectType as implementing the given InterfaceType and returns
 // a function to create an instance of the interface from the object
-func Implements[O any, I InterfaceBoxT](ot *ObjectType[O], it *InterfaceType[I]) func(*O) I {
+func Implements[O any, I InterfaceT](ot *ObjectType[O], it *InterfaceType[I]) func(*O) I {
 	oTyp := typeOf[*O]()
 	iTyp := typeOf[I]()
 	ot.implements = append(ot.implements, iTyp)

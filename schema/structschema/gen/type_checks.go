@@ -150,6 +150,16 @@ func isSSMetaType(typ types.Type) bool {
 	return false
 }
 
+func isSSInputObjectType(typ types.Type) bool {
+	if named, ok := typ.(*types.Named); ok {
+		tn := named.Obj()
+		if tn.Name() == "InputObject" && tn.Pkg().Path() == "github.com/housecanary/gq/schema/structschema" {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *genCtx) isResolverContextType(typ types.Type) bool {
 	if named, ok := typ.(*types.Named); ok {
 		tn := named.Obj()

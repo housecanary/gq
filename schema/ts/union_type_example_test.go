@@ -5,28 +5,28 @@ import (
 	"github.com/housecanary/gq/schema/ts/result"
 )
 
-var unionModType = ts.Module()
+var unionModType = ts.NewModule()
 
-// To create a union type, first declare a type derived from UnionBox
-type Meal ts.UnionBox
+// To create a union type, first declare a type derived from Union
+type Meal ts.Union
 
-// Next, construct the GQL type using the ts.Interface function
-var MealType = ts.Union[Meal](unionModType, `"Different meals"`)
+// Next, construct the GQL type using the ts.NewUnionType function
+var MealType = ts.NewUnionType[Meal](unionModType, `"Different meals"`)
 
 // Now, you can make objects that are members of the union
 type hamburger struct {
 }
 
-var hamburgerType = ts.Object[hamburger](unionModType, ``)
+var hamburgerType = ts.NewObjectType[hamburger](unionModType, ``)
 var mealFromHamburger = ts.UnionMember(MealType, hamburgerType)
 
 type hotdog struct {
 }
 
-var hotdogType = ts.Object[hotdog](unionModType, ``)
+var hotdogType = ts.NewObjectType[hotdog](unionModType, ``)
 var mealFromHotdog = ts.UnionMember(MealType, hotdogType)
 
-func ExampleUnion() {
+func ExampleNewUnionType() {
 
 	// Now you can create functions that return the union and wrap one of the implementations
 	x := 1

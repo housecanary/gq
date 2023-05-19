@@ -4,19 +4,19 @@ import (
 	"github.com/housecanary/gq/schema/ts"
 )
 
-var utMod = ts.Module()
+var utMod = ts.NewModule()
 
-type testUnion ts.UnionBox
+type testUnion ts.Union
 
 type foo struct{}
 
-var fooType = ts.Object[foo](utMod, "")
+var fooType = ts.NewObjectType[foo](utMod, "")
 
 type bar struct{}
 
-var barType = ts.Object[bar](utMod, "")
+var barType = ts.NewObjectType[bar](utMod, "")
 
-var unionType = ts.Union[testUnion](utMod, "")
+var unionType = ts.NewUnionType[testUnion](utMod, "")
 
 var TestUnionFromFoo = ts.UnionMember(unionType, fooType)
 var TestUnionFromBar = ts.UnionMember(unionType, barType)

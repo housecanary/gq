@@ -6,13 +6,13 @@ import (
 	"github.com/housecanary/gq/types"
 )
 
-var interfaceModType = ts.Module()
+var interfaceModType = ts.NewModule()
 
-// To create an interface type, first declare a type derived from InterfaceBox
-type Vehicle ts.InterfaceBox
+// To create an interface type, first declare a type derived from Interface
+type Vehicle ts.Interface
 
 // Next, construct the GQL type using the ts.Interface function
-var VehicleType = ts.Interface[Vehicle](interfaceModType, `
+var VehicleType = ts.NewInterfaceType[Vehicle](interfaceModType, `
 	"The commmon fields of vehicles"
 	{
 		sound: String
@@ -28,7 +28,7 @@ type car struct {
 	Passengers types.Int
 }
 
-var carType = ts.Object[car](interfaceModType, `"Enclosed vehicle with 4 wheels"`)
+var carType = ts.NewObjectType[car](interfaceModType, `"Enclosed vehicle with 4 wheels"`)
 var vehicleFromCar = ts.Implements(carType, VehicleType)
 
 type motorcycle struct {
@@ -38,10 +38,10 @@ type motorcycle struct {
 	HasSidecar types.Boolean
 }
 
-var motorcycleType = ts.Object[motorcycle](interfaceModType, `"Open vehicle with 2 wheels"`)
+var motorcycleType = ts.NewObjectType[motorcycle](interfaceModType, `"Open vehicle with 2 wheels"`)
 var vehicleFromMotorcycle = ts.Implements(motorcycleType, VehicleType)
 
-func ExampleInterface() {
+func ExampleNewInterfaceType() {
 
 	// Now you can create functions that return the interface and wrap one of the implementations
 	x := 1
