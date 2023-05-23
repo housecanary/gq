@@ -1,7 +1,6 @@
 package gen
 
 import (
-	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
@@ -18,6 +17,7 @@ type matcher func(n ast.Node) (bool, matcher)
 
 func sequenceOf(head matcher, tail ...matcher) matcher {
 	return func(n ast.Node) (bool, matcher) {
+		tail := tail
 		if match, next := head(n); match {
 			if next == nil {
 				if len(tail) == 0 {
@@ -44,13 +44,19 @@ func oneOf(alts ...matcher) matcher {
 	}
 }
 
-func matchAnyUntil(m matcher) matcher {
+func matchAnyUntil(m matcher, exclusions ...matcher) matcher {
 	return func(n ast.Node) (bool, matcher) {
 		if match, next := m(n); match {
 			return true, next
 		}
 
-		return true, matchAnyUntil(m)
+		for _, exclusion := range exclusions {
+			if match, _ := exclusion(n); match {
+				return false, nil
+			}
+		}
+
+		return true, matchAnyUntil(m, exclusions...)
 	}
 }
 
@@ -85,7 +91,6 @@ func matchField(ti *types.Info, pkg, name string, embedded bool) matcher {
 			return false
 		}
 		typ := ti.TypeOf(n.Type)
-		fmt.Println(typ)
 		if nt, ok := typ.(*types.Named); ok {
 			return nt.Obj().Pkg().Path() == pkg && nt.Obj().Name() == name
 		}

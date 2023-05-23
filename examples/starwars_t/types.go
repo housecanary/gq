@@ -7,7 +7,7 @@ import (
 
 var starwarsModule = ts.NewModule()
 
-type character ts.Interface
+type character ts.Interface[any]
 
 var characterType = ts.NewInterfaceType[character](starwarsModule, `"A character.  Could be human, alien, droid, etc." {
 	"The id of the character."

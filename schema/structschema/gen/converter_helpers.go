@@ -73,13 +73,20 @@ func buildFieldResolver(c *genCtx, pkg *packages.Package, typeName string, field
 	parms := sig.Params()
 	needQueryInfo := false
 	needsArgs := parms.Len() > 0
+	resultType, err := c.goTypeToSchemaType(getFieldType(pkg, sig))
+	if err != nil {
+		panic(err)
+	}
 
 	var gql string
 	if fieldDef.GQL.Description != "" {
-		gql = gqast.StringValue{V: fieldDef.GQL.Description}.Representation() + "\n"
+		gql = gqast.StringValue{V: fieldDef.GQL.Description}.Representation() + " "
 	}
 
 	gql += fieldDef.Name
+	if fieldDef.GQL.Type.Signature() != resultType.Signature() {
+		gql += ": " + fieldDef.GQL.Type.Signature()
+	}
 
 	if len(fieldDef.GQL.Directives) > 0 {
 		var sb strings.Builder
@@ -154,7 +161,7 @@ func buildFieldResolver(c *genCtx, pkg *packages.Package, typeName string, field
 				},
 				Tag: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: "`gq:\"@inject\"`",
+					Value: "`ts:\"inject\"`",
 				},
 			})
 		}
@@ -171,12 +178,49 @@ func buildFieldResolver(c *genCtx, pkg *packages.Package, typeName string, field
 				Type: n.Type,
 				Tag: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: "`gq:\"@inject\"`",
+					Value: "`ts:\"inject\"`",
 				},
 			})
 		}
 
-		for _, v := range argVars {
+		for i, v := range argVars {
+			argGQ := fieldDef.GQL.ArgumentsDefinition[i]
+			argType, err := c.goTypeToSchemaType(v.Type())
+			if err != nil {
+				panic(err)
+			}
+
+			var gql string
+			if argGQ.Name != v.Name() {
+				gql += argGQ.Name
+			}
+
+			if argType.Signature() != argGQ.Type.Signature() {
+				gql += ": " + argGQ.Type.Signature()
+			}
+
+			if argGQ.DefaultValue != nil {
+				gql += " = " + argGQ.DefaultValue.Representation()
+			}
+
+			if len(argGQ.Directives) > 0 {
+				var sb strings.Builder
+				argGQ.Directives.MarshalGraphQL(&sb)
+				gql += " " + sb.String()
+			}
+
+			if argGQ.Description != "" {
+				gql += ";" + argGQ.Description
+			}
+
+			var tag *ast.BasicLit
+			if gql != "" {
+				tag = &ast.BasicLit{
+					Kind:  token.STRING,
+					Value: "`gq:\"" + gql + "\"`",
+				}
+			}
+
 			n := findNodeContaining[*ast.Field](pkg, v.Pos())
 
 			fl = append(fl, &ast.Field{
@@ -186,6 +230,7 @@ func buildFieldResolver(c *genCtx, pkg *packages.Package, typeName string, field
 					},
 				},
 				Type: n.Type,
+				Tag:  tag,
 			})
 		}
 
@@ -228,7 +273,7 @@ func buildFieldResolver(c *genCtx, pkg *packages.Package, typeName string, field
 							},
 							Args: []ast.Expr{
 								&ast.Ident{
-									Name: typeName + "Type",
+									Name: typeName + "GQLType",
 								},
 								&ast.BasicLit{
 									Kind:  token.STRING,
@@ -278,7 +323,7 @@ func buildFieldResolver(c *genCtx, pkg *packages.Package, typeName string, field
 																Name: "Result",
 															},
 														},
-														Index: getFieldType(pkg, sig),
+														Index: getFieldASTType(pkg, sig),
 													},
 												},
 											},
@@ -313,7 +358,7 @@ func buildFieldResolver(c *genCtx, pkg *packages.Package, typeName string, field
 							},
 							Args: []ast.Expr{
 								&ast.Ident{
-									Name: typeName + "Type",
+									Name: typeName + "GQLType",
 								},
 								&ast.BasicLit{
 									Kind:  token.STRING,
@@ -350,7 +395,7 @@ func buildFieldResolver(c *genCtx, pkg *packages.Package, typeName string, field
 																Name: "Result",
 															},
 														},
-														Index: getFieldType(pkg, sig),
+														Index: getFieldASTType(pkg, sig),
 													},
 												},
 											},
@@ -377,22 +422,87 @@ func getTransformedBody(pkg *packages.Package, fieldDef *fieldMeta, argMap []arg
 func fixReturns(pkg *packages.Package, sig *types.Signature, body *ast.BlockStmt) *ast.BlockStmt {
 	var rule transformRule
 	results := sig.Results()
+
+	for _, file := range pkg.Syntax {
+		if file.FileStart <= body.Pos() && body.Pos() <= file.FileEnd {
+			astutil.AddImport(pkg.Fset, file, "github.com/housecanary/gq/schema/ts")
+			astutil.AddImport(pkg.Fset, file, "github.com/housecanary/gq/schema/ts/result")
+			break
+		}
+	}
+
+	matchReturns := matchAnyUntil(match[*ast.ReturnStmt](), match[*ast.FuncLit]())
+
 	if results.Len() == 1 {
 		if fun, ok := results.At(0).Type().Underlying().(*types.Signature); ok {
+			f := findNodeContaining[*ast.Field](pkg, sig.Results().At(0).Pos())
 			rule = transformRule{
-				matcher: matchAnyUntil(match[*ast.ReturnStmt]()),
+				matcher: matchReturns,
 				action: func(c *astutil.Cursor) {
+					resultExprs := c.Node().(*ast.ReturnStmt).Results
+
 					if fun.Params().Len() == 0 {
-						if lit, ok := c.Node().(*ast.ReturnStmt).Results[0].(*ast.FuncLit); ok {
-							lit.Type.Params = &ast.FieldList{
-								List: []*ast.Field{
-									{
-										Type: &ast.SelectorExpr{
-											X: &ast.Ident{
-												Name: "context",
+						for _, file := range pkg.Syntax {
+							if file.FileStart <= body.Pos() && body.Pos() <= file.FileEnd {
+								astutil.AddImport(pkg.Fset, file, "context")
+								break
+							}
+						}
+
+						if funcLit, ok := c.Node().(*ast.ReturnStmt).Results[0].(*ast.FuncLit); ok {
+							funcLit.Type.Params.List = []*ast.Field{
+								{
+									Type: &ast.SelectorExpr{
+										X: &ast.Ident{
+											Name: "context",
+										},
+										Sel: &ast.Ident{
+											Name: "Context",
+										},
+									},
+								},
+							}
+						} else {
+							c.InsertBefore(&ast.AssignStmt{
+								Tok: token.DEFINE,
+								Lhs: []ast.Expr{
+									&ast.Ident{
+										Name: "resultFn",
+									},
+								},
+								Rhs: []ast.Expr{
+									c.Node().(*ast.ReturnStmt).Results[0],
+								},
+							})
+							resultExprs = []ast.Expr{
+								&ast.FuncLit{
+									Type: &ast.FuncType{
+										Params: &ast.FieldList{
+											List: []*ast.Field{
+												{
+													Type: &ast.SelectorExpr{
+														X: &ast.Ident{
+															Name: "context",
+														},
+														Sel: &ast.Ident{
+															Name: "Context",
+														},
+													},
+												},
 											},
-											Sel: &ast.Ident{
-												Name: "Context",
+										},
+										Results: f.Type.(*ast.FuncType).Results,
+									},
+									Body: &ast.BlockStmt{
+										List: []ast.Stmt{
+											&ast.ReturnStmt{
+												Results: []ast.Expr{
+													&ast.CallExpr{
+														Fun: &ast.Ident{
+															Name: "resultFn",
+														},
+													},
+												},
 											},
 										},
 									},
@@ -412,7 +522,7 @@ func fixReturns(pkg *packages.Package, sig *types.Signature, body *ast.BlockStmt
 										Name: "Async",
 									},
 								},
-								Args: c.Node().(*ast.ReturnStmt).Results,
+								Args: resultExprs,
 							},
 						},
 					})
@@ -420,7 +530,7 @@ func fixReturns(pkg *packages.Package, sig *types.Signature, body *ast.BlockStmt
 			}
 		} else if _, ok := results.At(0).Type().Underlying().(*types.Chan); ok {
 			rule = transformRule{
-				matcher: matchAnyUntil(match[*ast.ReturnStmt]()),
+				matcher: matchReturns,
 				action: func(c *astutil.Cursor) {
 					c.Replace(&ast.ReturnStmt{
 						Results: []ast.Expr{
@@ -441,7 +551,7 @@ func fixReturns(pkg *packages.Package, sig *types.Signature, body *ast.BlockStmt
 			}
 		} else {
 			rule = transformRule{
-				matcher: matchAnyUntil(match[*ast.ReturnStmt]()),
+				matcher: matchReturns,
 				action: func(c *astutil.Cursor) {
 					c.Replace(&ast.ReturnStmt{
 						Results: []ast.Expr{
@@ -464,7 +574,7 @@ func fixReturns(pkg *packages.Package, sig *types.Signature, body *ast.BlockStmt
 	} else {
 		if _, ok := results.At(0).Type().Underlying().(*types.Chan); ok {
 			rule = transformRule{
-				matcher: matchAnyUntil(match[*ast.ReturnStmt]()),
+				matcher: matchReturns,
 				action: func(c *astutil.Cursor) {
 					c.Replace(&ast.ReturnStmt{
 						Results: []ast.Expr{
@@ -485,7 +595,7 @@ func fixReturns(pkg *packages.Package, sig *types.Signature, body *ast.BlockStmt
 			}
 		} else {
 			rule = transformRule{
-				matcher: matchAnyUntil(match[*ast.ReturnStmt]()),
+				matcher: matchReturns,
 				action: func(c *astutil.Cursor) {
 					c.Replace(&ast.ReturnStmt{
 						Results: []ast.Expr{
@@ -530,11 +640,11 @@ func fixArgs(argMap []argTranslate, body *ast.BlockStmt) *ast.BlockStmt {
 	return body
 }
 
-func getFieldType(pkg *packages.Package, sig *types.Signature) ast.Expr {
+func getFieldASTType(pkg *packages.Package, sig *types.Signature) ast.Expr {
 	results := sig.Results()
 	if results.Len() == 1 {
 		if fun, ok := results.At(0).Type().Underlying().(*types.Signature); ok {
-			return getFieldType(pkg, fun)
+			return getFieldASTType(pkg, fun)
 		} else if _, ok := results.At(0).Type().Underlying().(*types.Chan); ok {
 			f := findNodeContaining[*ast.Field](pkg, sig.Results().At(0).Pos())
 			return f.Type.(*ast.ChanType).Value
@@ -549,6 +659,25 @@ func getFieldType(pkg *packages.Package, sig *types.Signature) ast.Expr {
 		} else {
 			f := findNodeContaining[*ast.Field](pkg, sig.Results().At(0).Pos())
 			return f.Type
+		}
+	}
+}
+
+func getFieldType(pkg *packages.Package, sig *types.Signature) types.Type {
+	results := sig.Results()
+	if results.Len() == 1 {
+		if fun, ok := results.At(0).Type().Underlying().(*types.Signature); ok {
+			return getFieldType(pkg, fun)
+		} else if ch, ok := results.At(0).Type().Underlying().(*types.Chan); ok {
+			return ch.Elem()
+		} else {
+			return results.At(0).Type()
+		}
+	} else {
+		if ch, ok := results.At(0).Type().Underlying().(*types.Chan); ok {
+			return ch.Elem()
+		} else {
+			return results.At(0).Type()
 		}
 	}
 }

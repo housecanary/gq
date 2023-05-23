@@ -1,3 +1,17 @@
+// Copyright 2023 HouseCanary, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ts
 
 import (
@@ -17,7 +31,7 @@ type TypeRegistry struct {
 // NewTypeRegistry creates a schema.Builder from a set of ts modules.
 func NewTypeRegistry(opts ...TypeRegistryOption) (*TypeRegistry, error) {
 	cnf := typeRegistryConfig{
-		providers: make(map[reflect.Type]func(QueryInfo, ast.Arguments) any),
+		providers: make(map[reflect.Type]func(QueryInfo) any),
 	}
 
 	WithProvider(func(qi QueryInfo) QueryInfo {
@@ -31,19 +45,20 @@ func NewTypeRegistry(opts ...TypeRegistryOption) (*TypeRegistry, error) {
 	bc := newBuildContext(cnf.providers)
 	sb := schema.NewBuilder()
 	var allTypes []builderType
-	for _, mod := range append(cnf.mods, BuiltinTypes) {
-		types := mod.elements
+	for _, mc := range append(cnf.mods, &ModuleConfig{mod: BuiltinTypes}) {
+		types := mc.mod.elements
 		for _, bt := range types {
-			gqlType, goType, err := bt.parse(mod.typePrefix)
+			gqlType, goType, err := bt.parse(mc.mod.typePrefix)
 			if err != nil {
 				return nil, fmt.Errorf("cannot parse type %s: %w", bt.describe(), err)
 			}
 			bc.goTypeToSchemaType[goType] = gqlType
+			bc.goTypeToBuilder[goType] = bt
+			if _, excluded := mc.exclude[gqlType.astType.Signature()]; !excluded {
+				allTypes = append(allTypes, bt)
+			}
 		}
-		allTypes = append(allTypes, types...)
 	}
-
-	// TODO: should we allow the same type to be registered in multiple modules?
 
 	for _, bt := range allTypes {
 		err := bt.build(bc, sb)
@@ -143,8 +158,8 @@ type TypeRegistryOption interface {
 }
 
 type typeRegistryConfig struct {
-	mods      []*Module
-	providers map[reflect.Type]func(QueryInfo, ast.Arguments) any
+	mods      []*ModuleConfig
+	providers map[reflect.Type]func(QueryInfo) any
 }
 
 type typeRegistryOptionFunc func(config *typeRegistryConfig)
@@ -154,26 +169,34 @@ func (f typeRegistryOptionFunc) apply(config *typeRegistryConfig) {
 }
 
 // WithModule adds a module to the type registry
-func WithModule(mod *Module) TypeRegistryOption {
-	return typeRegistryOptionFunc(func(config *typeRegistryConfig) {
-		config.mods = append(config.mods, mod)
-	})
+func WithModule(mod *Module) *ModuleConfig {
+	return &ModuleConfig{
+		mod:     mod,
+		exclude: make(map[string]struct{}),
+	}
+}
+
+type ModuleConfig struct {
+	mod     *Module
+	exclude map[string]struct{}
+}
+
+func (mc *ModuleConfig) apply(config *typeRegistryConfig) {
+	config.mods = append(config.mods, mc)
+}
+
+func (mc *ModuleConfig) Excluding(names ...string) *ModuleConfig {
+	for _, name := range names {
+		mc.exclude[name] = struct{}{}
+	}
+	return mc
 }
 
 // WithProvider adds a provider for type T
 func WithProvider[T any](f func(QueryInfo) T) TypeRegistryOption {
 	return typeRegistryOptionFunc(func(config *typeRegistryConfig) {
-		config.providers[typeOf[T]()] = func(qi QueryInfo, a ast.Arguments) any {
+		config.providers[typeOf[T]()] = func(qi QueryInfo) any {
 			return f(qi)
-		}
-	})
-}
-
-// WithProviderWithArgs adds a provider for type T
-func WithProviderWithArgs[T any](f func(QueryInfo, ast.Arguments) T) TypeRegistryOption {
-	return typeRegistryOptionFunc(func(config *typeRegistryConfig) {
-		config.providers[typeOf[T]()] = func(qi QueryInfo, a ast.Arguments) any {
-			return f(qi, a)
 		}
 	})
 }
@@ -184,7 +207,7 @@ type QueryFieldSelection struct {
 	Children    []*QueryFieldSelection
 }
 
-type fieldInvoker func(q QueryInfo, o interface{}) interface{}
+type fieldInvoker func(q QueryInfo, o any) any
 
 type fieldRuntimeInfo struct {
 	sourceField reflect.StructField
@@ -193,11 +216,11 @@ type fieldRuntimeInfo struct {
 
 type invokeQueryInfo struct {
 	ctx      context.Context
-	args     map[string]interface{}
+	args     map[string]any
 	children []*QueryFieldSelection
 }
 
-func (q *invokeQueryInfo) ArgumentValue(name string) (interface{}, error) {
+func (q *invokeQueryInfo) ArgumentValue(name string) (any, error) {
 	return q.args[name], nil
 }
 

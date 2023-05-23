@@ -1,3 +1,17 @@
+// Copyright 2023 HouseCanary, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ts
 
 import (
@@ -16,14 +30,16 @@ type builderType interface {
 
 type buildContext struct {
 	goTypeToSchemaType map[reflect.Type]*gqlTypeInfo
+	goTypeToBuilder    map[reflect.Type]builderType
 	implements         map[string]map[reflect.Type]string
 	objectTypes        map[reflect.Type]map[string]*fieldRuntimeInfo
-	providers          map[reflect.Type]func(QueryInfo, ast.Arguments) any
+	providers          map[reflect.Type]func(QueryInfo) any
 }
 
-func newBuildContext(providers map[reflect.Type]func(QueryInfo, ast.Arguments) any) *buildContext {
+func newBuildContext(providers map[reflect.Type]func(QueryInfo) any) *buildContext {
 	return &buildContext{
 		make(map[reflect.Type]*gqlTypeInfo),
+		make(map[reflect.Type]builderType),
 		make(map[string]map[reflect.Type]string),
 		make(map[reflect.Type]map[string]*fieldRuntimeInfo),
 		providers,

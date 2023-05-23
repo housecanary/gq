@@ -75,11 +75,12 @@ func (m *objMeta) Kind() typeKind {
 }
 
 type fieldMeta struct {
-	Obj    *objMeta
-	Name   string
-	GQL    *ast.FieldDefinition
-	Method *types.Selection
-	Field  *types.Var
+	Obj          *objMeta
+	Name         string
+	GQL          *ast.FieldDefinition
+	Method       *types.Selection
+	Field        *types.Var
+	FromEmbedded bool
 }
 
 type sortFieldMetasByName []*fieldMeta

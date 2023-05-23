@@ -1,3 +1,17 @@
+// Copyright 2023 HouseCanary, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ts
 
 import (
@@ -26,11 +40,15 @@ type FieldType[R any] struct {
 	rType            reflect.Type
 	aType            reflect.Type
 	ResolverFunction R
-	makeResolver     func(c *buildContext) (schema.Resolver, fieldInvoker, error)
+	makeResolverFn   func(c *buildContext) (schema.Resolver, fieldInvoker, error)
 }
 
 func (ft *FieldType[R]) originalDefinition() string {
 	return ft.def
+}
+
+func (ft *FieldType[R]) makeResolver(c *buildContext) (schema.Resolver, fieldInvoker, error) {
+	return ft.makeResolverFn(c)
 }
 
 func (ft *FieldType[R]) buildFieldDef(c *buildContext) (*ast.FieldDefinition, bool, error) {
@@ -61,16 +79,16 @@ func (ft *FieldType[R]) buildFieldDef(c *buildContext) (*ast.FieldDefinition, bo
 	if ft.aType != nil {
 		fields := reflect.VisibleFields(ft.aType)
 		for _, field := range fields {
+			if field.Tag.Get("ts") == "inject" {
+				continue
+			}
+
 			ad, _, err := parseStructField(c, field, parser.ParsePartialInputValueDefinition)
 			if err != nil {
 				return nil, false, fmt.Errorf("cannot parse input argument %s: %w", field.Name, err)
 			}
 
 			if ad == nil {
-				continue
-			}
-
-			if _, isInjected := ad.Directives.ByName("inject"); isInjected {
 				continue
 			}
 
@@ -93,26 +111,27 @@ func makeArgBinder[A any](c *buildContext) (argBinder[A], error) {
 	binds := make([]func(QueryInfo, reflect.Value) error, 0, len(fields))
 	for _, field := range fields {
 		field := field
-		ad, _, err := parseStructField(c, field, parser.ParsePartialInputValueDefinition)
-		if ad == nil {
-			continue
-		}
-		if err != nil {
-			return nil, fmt.Errorf("cannot parse input argument %s: %w", field.Name, err)
-		}
 
-		if injectDirective, isInjected := ad.Directives.ByName("inject"); isInjected {
+		if field.Tag.Get("ts") == "inject" {
 			provider, ok := c.providers[field.Type]
 			if !ok {
 				return nil, fmt.Errorf("No provider registered for type %v", field.Type)
 			}
 
 			binds = append(binds, func(qi QueryInfo, v reflect.Value) error {
-				av := provider(qi, injectDirective.Arguments)
+				av := provider(qi)
 				v.FieldByIndex(field.Index).Set(reflect.ValueOf(av))
 				return nil
 			})
 			continue
+		}
+
+		ad, _, err := parseStructField(c, field, parser.ParsePartialInputValueDefinition)
+		if ad == nil {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse input argument %s: %w", field.Name, err)
 		}
 
 		binds = append(binds, func(qi QueryInfo, v reflect.Value) error {

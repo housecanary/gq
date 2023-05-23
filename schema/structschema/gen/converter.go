@@ -15,7 +15,6 @@
 package gen
 
 import (
-	"fmt"
 	"go/ast"
 	"go/format"
 	"go/token"
@@ -113,8 +112,6 @@ func (c *genCtx) convertToTS() error {
 			defer f.Close()
 			format.Node(f, pkg.Fset, file)
 		}
-
-		fmt.Println(pkg.PkgPath)
 	}
 
 	return nil
@@ -139,7 +136,6 @@ func rewriteType(gq gqlMeta, c *genCtx, apply func(ri rewriteInfo) []transformRu
 		for _, file := range pkg.Syntax {
 			if file.FileStart <= updatePos && updatePos <= file.FileEnd {
 				astutil.AddImport(pkg.Fset, file, "github.com/housecanary/gq/schema/ts")
-				astutil.AddImport(pkg.Fset, file, "github.com/housecanary/gq/schema/ts/result")
 				rules := apply(rewriteInfo{
 					typeMatcher: matchAnyUntil(matchPosition(updatePos)),
 					typeName:    typ.Obj().Name(),
@@ -147,6 +143,13 @@ func rewriteType(gq gqlMeta, c *genCtx, apply func(ri rewriteInfo) []transformRu
 					file:        file,
 				})
 				transform(file, rules...)
+				for _, other := range pkg.Syntax {
+					if other == file {
+						continue
+					}
+					transform(other, rules...)
+				}
+				break
 			}
 		}
 	}
@@ -177,7 +180,7 @@ func rewriteEnum(gq gqlMeta, c *genCtx) {
 				action: func(c *astutil.Cursor) {
 					var appendNodes []ast.Node
 
-					enumTypeName := ri.typeName + "Type"
+					enumTypeName := ri.typeName + "GQLType"
 
 					etd := gq.(*enumMeta).GQL
 
@@ -289,7 +292,7 @@ func rewriteEnum(gq gqlMeta, c *genCtx) {
 					}
 
 					for _, n := range appendNodes {
-						c.InsertBefore(n)
+						c.InsertAfter(n)
 					}
 
 				},
@@ -318,7 +321,7 @@ func rewriteInputObject(gq gqlMeta, c *genCtx) {
 					return test(n, ri.typeMatcher)
 				})),
 				action: func(c *astutil.Cursor) {
-					inputObjectTypeName := ri.typeName + "Type"
+					inputObjectTypeName := ri.typeName + "GQLType"
 
 					iod := gq.(*inputObjMeta).GQL
 
@@ -337,7 +340,7 @@ func rewriteInputObject(gq gqlMeta, c *genCtx) {
 						gql = append(gql, sb.String())
 					}
 
-					c.InsertBefore(&ast.GenDecl{
+					c.InsertAfter(&ast.GenDecl{
 						Tok: token.VAR,
 						Specs: []ast.Spec{
 							&ast.ValueSpec{
@@ -408,13 +411,13 @@ func rewriteInterface(gq gqlMeta, c *genCtx) {
 					return test(n, ri.typeMatcher)
 				})),
 				action: func(c *astutil.Cursor) {
-					c.InsertBefore(&ast.GenDecl{
+					c.InsertAfter(&ast.GenDecl{
 						Tok: token.VAR,
 						Specs: []ast.Spec{
 							&ast.ValueSpec{
 								Names: []*ast.Ident{
 									{
-										Name: ri.typeName + "Type",
+										Name: ri.typeName + "GQLType",
 									},
 								},
 								Values: []ast.Expr{
@@ -458,7 +461,7 @@ func rewriteObject(gq gqlMeta, c *genCtx) {
 
 		var addNodes []ast.Node
 
-		objectTypeName := ri.typeName + "Type"
+		objectTypeName := ri.typeName + "GQLType"
 
 		od := gq.(*objMeta).GQL
 
@@ -564,6 +567,12 @@ func rewriteObject(gq gqlMeta, c *genCtx) {
 									if id.Name == ri.typeName {
 										return true
 									}
+								} else if star, ok := fd.Recv.List[0].Type.(*ast.StarExpr); ok {
+									if id, ok := star.X.(*ast.Ident); ok {
+										if id.Name == ri.typeName {
+											return true
+										}
+									}
 								}
 								return false
 							})),
@@ -593,10 +602,10 @@ func rewriteObject(gq gqlMeta, c *genCtx) {
 										},
 										Args: []ast.Expr{
 											&ast.Ident{
-												Name: ri.typeName + "Type",
+												Name: ri.typeName + "GQLType",
 											},
 											&ast.Ident{
-												Name: meta.NamedType().Obj().Name() + "Type",
+												Name: meta.NamedType().Obj().Name() + "GQLType",
 											},
 										},
 									},
@@ -623,6 +632,12 @@ func rewriteObject(gq gqlMeta, c *genCtx) {
 									if id.Name == ri.typeName {
 										return true
 									}
+								} else if star, ok := fd.Recv.List[0].Type.(*ast.StarExpr); ok {
+									if id, ok := star.X.(*ast.Ident); ok {
+										if id.Name == ri.typeName {
+											return true
+										}
+									}
 								}
 								return false
 							})),
@@ -637,20 +652,24 @@ func rewriteObject(gq gqlMeta, c *genCtx) {
 
 		for _, f := range ot.Fields {
 			f := f
-			if f.Method != nil {
+			genctx := c
+			if f.Method != nil && !f.FromEmbedded {
+				toDelete := findNodeContaining[*ast.FuncDecl](ri.pkg, f.Method.Obj().Pos())
 				rules = append(rules, transformRule{
 					matcher: sequenceOf(
 						match[*ast.File](),
 						match(func(n *ast.FuncDecl) bool {
-							return n.Name != nil && n.Name.Name == f.Method.Obj().Name()
+							return n == toDelete
 						}),
 					),
 					action: func(c *astutil.Cursor) {
+						nodes := buildFieldResolver(genctx, ri.pkg, ri.typeName, f)
+						for _, n := range nodes {
+							c.InsertBefore(n)
+						}
 						c.Delete()
 					},
 				})
-
-				addNodes = append(addNodes, buildFieldResolver(c, ri.pkg, ri.typeName, f)...)
 			}
 		}
 
@@ -678,7 +697,7 @@ func rewriteScalar(gq gqlMeta, c *genCtx) {
 					return test(n, ri.typeMatcher)
 				})),
 				action: func(c *astutil.Cursor) {
-					scalarTypeName := ri.typeName + "Type"
+					scalarTypeName := ri.typeName + "GQLType"
 
 					sd := gq.(*scalarMeta).GQL
 
@@ -697,7 +716,7 @@ func rewriteScalar(gq gqlMeta, c *genCtx) {
 						gql = append(gql, sb.String())
 					}
 
-					c.InsertBefore(&ast.GenDecl{
+					c.InsertAfter(&ast.GenDecl{
 						Tok: token.VAR,
 						Specs: []ast.Spec{
 							&ast.ValueSpec{
@@ -750,7 +769,7 @@ func rewriteUnion(gq gqlMeta, c *genCtx) {
 					&ast.ValueSpec{
 						Names: []*ast.Ident{
 							{
-								Name: ri.typeName + "Type",
+								Name: ri.typeName + "GQLType",
 							},
 						},
 						Values: []ast.Expr{
@@ -809,10 +828,10 @@ func rewriteUnion(gq gqlMeta, c *genCtx) {
 										},
 										Args: []ast.Expr{
 											&ast.Ident{
-												Name: ri.typeName + "Type",
+												Name: ri.typeName + "GQLType",
 											},
 											&ast.Ident{
-												Name: meta.NamedType().Obj().Name() + "Type",
+												Name: meta.NamedType().Obj().Name() + "GQLType",
 											},
 										},
 									},

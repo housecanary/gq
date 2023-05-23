@@ -182,6 +182,7 @@ func (c *genCtx) processObjectType(typ *types.Named) (*objMeta, error) {
 									return nil, err
 								}
 								fieldMeta.Method = fun
+								fieldMeta.FromEmbedded = true
 							}
 						}
 						allFields = append(allFields, fieldMeta)

@@ -46,7 +46,9 @@ func safeParse(input string, cb func(*gen.GraphqlParser)) (err ParseError) {
 	p.SetInputStream(stream)
 
 	p.RemoveErrorListeners()
-	p.AddErrorListener(panicListener{})
+	p.AddErrorListener(panicListener{
+		ErrorListener: antlr.NewConsoleErrorListener(),
+	})
 	defer func() {
 		if r := recover(); r != nil {
 			switch t := r.(type) {
