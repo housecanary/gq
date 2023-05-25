@@ -212,7 +212,7 @@ func (d *ArgumentDescriptor) Type() Type {
 
 // DefaultValue returns the default value of this field
 func (d *ArgumentDescriptor) DefaultValue() LiteralValue {
-	return literalValueFromAstValue(d.defaultValue)
+	return LiteralValueFromAstValue(d.defaultValue)
 }
 
 func (t *ObjectType) signature() string {

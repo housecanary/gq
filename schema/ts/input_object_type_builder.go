@@ -127,9 +127,10 @@ func (b *inputObjectTypeBuilder[O]) makeInputConverter(c *buildContext) inputCon
 	typ := typeOf[O]()
 
 	type fieldConversionData struct {
-		Name      string
-		Index     []int
-		Converter inputConverter
+		Name         string
+		Index        []int
+		Converter    inputConverter
+		DefaultValue schema.LiteralValue
 	}
 
 	var fields []*fieldConversionData
@@ -147,7 +148,14 @@ func (b *inputObjectTypeBuilder[O]) makeInputConverter(c *buildContext) inputCon
 				if err != nil {
 					return err
 				}
-				if err := f.Converter(obj[f.Name], target); err != nil {
+
+				var fieldVal schema.LiteralValue
+				if fv, ok := obj[f.Name]; ok {
+					fieldVal = fv
+				} else {
+					fieldVal = f.DefaultValue
+				}
+				if err := f.Converter(fieldVal, target); err != nil {
 					return fmt.Errorf("invalid input for field %s: %w", f.Name, err)
 				}
 			}
@@ -168,11 +176,16 @@ func (b *inputObjectTypeBuilder[O]) makeInputConverter(c *buildContext) inputCon
 			return nil
 		}
 
+		if valueDef == nil {
+			continue
+		}
+
 		inputConverter := makeInputConverterForType(c, valueDef.Type, field.Type)
 		fields = append(fields, &fieldConversionData{
-			Name:      valueDef.Name,
-			Index:     field.Index,
-			Converter: inputConverter,
+			Name:         valueDef.Name,
+			Index:        field.Index,
+			Converter:    inputConverter,
+			DefaultValue: schema.LiteralValueFromAstValue(valueDef.DefaultValue),
 		})
 	}
 

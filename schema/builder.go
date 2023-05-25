@@ -726,7 +726,7 @@ func (b *InputObjectTypeBuilder) registerType(ctx *buildContext) buildError {
 			f.named,
 			f.toSchemaElement(),
 			fieldType,
-			literalValueFromAstValue(f.defaultValue),
+			LiteralValueFromAstValue(f.defaultValue),
 			f.defaultValue,
 			decoder,
 		}

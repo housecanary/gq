@@ -90,7 +90,7 @@ func (d *DirectiveArgument) writeSchemaDefinition(w *schemaWriter) {
 
 // Value returns the value of the directive argument
 func (d *DirectiveArgument) Value() LiteralValue {
-	return literalValueFromAstValue(d.value)
+	return LiteralValueFromAstValue(d.value)
 }
 
 // Directive represents a directive applied to a schema element

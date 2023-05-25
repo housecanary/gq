@@ -48,7 +48,7 @@ type LiteralArray []LiteralValue
 
 func (LiteralArray) isLiteralValue() {}
 
-func literalValueFromAstValue(v ast.Value) LiteralValue {
+func LiteralValueFromAstValue(v ast.Value) LiteralValue {
 	if v == nil {
 		return nil
 	}
@@ -66,13 +66,13 @@ func literalValueFromAstValue(v ast.Value) LiteralValue {
 	case ast.ObjectValue:
 		lv := make(LiteralObject)
 		for k, v := range tv.V {
-			lv[k] = literalValueFromAstValue(v)
+			lv[k] = LiteralValueFromAstValue(v)
 		}
 		return lv
 	case ast.ArrayValue:
 		lv := make(LiteralArray, len(tv.V))
 		for i, v := range tv.V {
-			lv[i] = literalValueFromAstValue(v)
+			lv[i] = LiteralValueFromAstValue(v)
 		}
 		return lv
 	}

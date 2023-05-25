@@ -94,6 +94,13 @@ func TestTSSchema(t *testing.T) {
 					return result.Of(a.Input.RequiredField)
 				})
 
+				type args4 struct {
+					String types.String `gq:":String! = \"hello\""`
+				}
+				ts.AddFieldWithArgs(queryGQLType, `requiredArgDefault`, func(q *Query, a *args4) ts.Result[types.String] {
+					return result.Of(a.String)
+				})
+
 				return &Query{
 					FieldList: []types.String{types.NewString("c")},
 				}

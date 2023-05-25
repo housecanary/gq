@@ -3,4 +3,5 @@
   lists(list: [["a", "b"]])
   requiredArg
   requiredField(input:{})
+  requiredArgDefault
 }

@@ -3,7 +3,8 @@
     "lists": [["a", "b"]],
     "fieldList": ["c"],
     "requiredArg": null,
-    "requiredField": null
+    "requiredField": null,
+    "requiredArgDefault": "hello"
   },
   "errors": [
     {
