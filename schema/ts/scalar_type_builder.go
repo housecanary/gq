@@ -41,7 +41,7 @@ func (b *scalarTypeBuilder[S, PS]) build(c *buildContext, sb *schema.Builder) er
 	tb := sb.AddScalarType(
 		b.def.Name,
 		func(ctx context.Context, v interface{}) (schema.LiteralValue, error) {
-			sv := v.(S)
+			sv := v.(schema.ScalarMarshaler)
 			return sv.ToLiteralValue()
 		},
 		func(ctx context.Context, v schema.LiteralValue) (interface{}, error) {
@@ -54,4 +54,10 @@ func (b *scalarTypeBuilder[S, PS]) build(c *buildContext, sb *schema.Builder) er
 
 	setSchemaElementProps(tb, b.def.Description, b.def.Directives)
 	return nil
+}
+
+func (b *scalarTypeBuilder[S, PS]) makeInputConverter(c *buildContext) inputConverter {
+	return func(value schema.LiteralValue, dest reflect.Value) error {
+		return dest.Addr().Interface().(PS).FromLiteralValue(value)
+	}
 }

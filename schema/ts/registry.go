@@ -102,7 +102,7 @@ func (ts *TypeRegistry) QueryField(ctx context.Context, o any, name string, args
 
 // GetBackingField returns a reflect.Value that points to the struct field that backs a GQL field.
 //
-// If the given field is not backed by a struct field, an error is returned
+// If the given field is not backed by a struct field, or the field is only traversable via a nil pointer, an error is returned
 func (ts *TypeRegistry) GetBackingField(o any, name string) (reflect.Value, error) {
 	fi, err := ts.getFieldRuntimeInfo(reflect.TypeOf(o), name)
 	if err != nil {
@@ -112,7 +112,7 @@ func (ts *TypeRegistry) GetBackingField(o any, name string) (reflect.Value, erro
 		return reflect.ValueOf(nil), fmt.Errorf("field %s is virtual", name)
 	}
 
-	return reflect.ValueOf(o).Elem().FieldByIndex(fi.sourceField.Index), nil
+	return reflect.ValueOf(o).Elem().FieldByIndexErr(fi.sourceField.Index)
 }
 
 // GetFieldTag returns a reflect.StructTag from the the struct field that backs a GQL field.
@@ -207,7 +207,7 @@ type QueryFieldSelection struct {
 	Children    []*QueryFieldSelection
 }
 
-type fieldInvoker func(q QueryInfo, o any) any
+type fieldInvoker func(q *invokeQueryInfo, o any) any
 
 type fieldRuntimeInfo struct {
 	sourceField reflect.StructField
@@ -230,6 +230,16 @@ func (q *invokeQueryInfo) QueryContext() context.Context {
 
 func (q *invokeQueryInfo) ChildFieldsIterator() schema.FieldSelectionIterator {
 	return &queryFieldSelectionIterator{}
+}
+
+func (q *invokeQueryInfo) setArgumentValue(name string, dest reflect.Value, converter inputConverter) error {
+	av := q.args[name]
+	rv := reflect.ValueOf(av)
+	if !rv.Type().AssignableTo(dest.Type()) && av != nil {
+		return fmt.Errorf("cannot assign a value of type %T to a destination of type %T for argument %s", av, dest.Interface(), name)
+	}
+	dest.Set(rv)
+	return nil
 }
 
 type queryFieldSelectionIterator struct {

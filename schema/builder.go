@@ -504,13 +504,15 @@ func (b *ObjectTypeBuilder) registerType(ctx *buildContext) buildError {
 		ctx.popPathElement(ctxLvl)
 	}
 
+	var nameIface any
+	nameIface = ot.name
 	fieldsByName["__typename"] = &FieldDescriptor{
 		named{"__typename"},
 		schemaElement{},
 		nil,
 		&NotNilType{introspectionStringType},
 		SimpleResolver(func(interface{}) (interface{}, error) {
-			return ot.name, nil
+			return nameIface, nil
 		}),
 	}
 

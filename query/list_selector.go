@@ -44,7 +44,7 @@ func (s listSelector) apply(ctx *exeContext, value interface{}, collector collec
 	var deferred []contFunc
 	lv, ok := value.(schema.ListValue)
 	if !ok {
-		err := fmt.Errorf("Value %v is not a list value", value)
+		err := fmt.Errorf("Value %v (type: %T) is not a list value", value, value)
 		ctx.listener.NotifyError(err)
 		collector.Error(err, s.row, s.col)
 		return nil

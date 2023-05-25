@@ -31,6 +31,7 @@ type DecodeInputObject func(ctx InputObjectDecodeContext) (interface{}, error)
 type InputObjectDecodeContext interface {
 	IsNil() bool
 	GetFieldValue(name string) (interface{}, error)
+	GetRawFieldValue(name string) (LiteralValue, error)
 }
 
 var _ Type = (*InputObjectType)(nil)
@@ -96,6 +97,24 @@ func (i *inputObjectDecodeContext) GetFieldValue(name string) (interface{}, erro
 			return fd.decoder(i.ctx, val)
 		}
 		return fd.decoder(i.ctx, fd.defaultValue)
+	}
+
+	return nil, fmt.Errorf("Input value is not an object (%v)", i.root)
+
+}
+
+func (i *inputObjectDecodeContext) GetRawFieldValue(name string) (LiteralValue, error) {
+	fd, ok := i.t.fields[name]
+	if !ok {
+		return nil, fmt.Errorf("Input object requested value of invalid field %s", name)
+	}
+
+	if lo, ok := i.root.(LiteralObject); ok {
+		val, ok := lo[name]
+		if ok {
+			return val, nil
+		}
+		return fd.defaultValue, nil
 	}
 
 	return nil, fmt.Errorf("Input value is not an object (%v)", i.root)

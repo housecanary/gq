@@ -137,3 +137,24 @@ func TestEmbeddedObjectFieldResolvers(t *testing.T) {
 	}
 
 }
+
+func TestObjectUnregisteredReturnType(t *testing.T) {
+	m := NewModule()
+
+	type t1 struct {
+	}
+
+	type t2 struct {
+	}
+
+	ot1 := NewObjectType[t1](m, "t1")
+	AddField(ot1, "f1", func(p *t1) Result[t2] {
+		return result.Of(t2{})
+	})
+
+	_, err := NewTypeRegistry(WithModule(m))
+	if err == nil {
+		t.Fatal("expected building to fail")
+	}
+
+}

@@ -217,7 +217,7 @@ func (e *embeddedResolverFactory[T]) makeResolver(c *buildContext) (schema.Resol
 		return dr.Resolve(ctx, (*T)(e.getPointer(v)))
 	})
 
-	invoker := func(q QueryInfo, o interface{}) interface{} {
+	invoker := func(q *invokeQueryInfo, o interface{}) interface{} {
 		return di(q, (*T)(e.getPointer(o)))
 	}
 
@@ -229,41 +229,65 @@ func (b *objectTypeBuilder[O]) buildField(c *buildContext, tb *schema.ObjectType
 	var resolver schema.Resolver
 	switch source := source.(type) {
 	case reflect.StructField:
-		var getValue func(v interface{}) interface{}
+		var getValue func(v interface{}) (interface{}, bool)
 
 		if source.Type.Kind() == reflect.Struct {
+			canonicalTypeIsPtr := false
 			if gqlType, ok := c.goTypeToSchemaType[reflect.PointerTo(source.Type)]; ok && gqlType.kind == kindObject {
-				getValue = func(v interface{}) interface{} {
-					tv := v.(*O)
-					if tv == nil {
-						return nil
-					}
-
-					rv := reflect.ValueOf(tv)
-					return rv.Elem().FieldByIndex(source.Index).Addr().Interface()
+				canonicalTypeIsPtr = true
+			}
+			getValue = func(v interface{}) (interface{}, bool) {
+				tv := v.(*O)
+				if tv == nil {
+					return nil, false
 				}
+
+				rv := reflect.ValueOf(tv)
+				fieldValue, err := rv.Elem().FieldByIndexErr(source.Index)
+				if err != nil {
+					return nil, false
+				}
+				return fieldValue.Addr().Interface(), !canonicalTypeIsPtr
 			}
 		}
 
 		if getValue == nil {
-			getValue = func(v interface{}) interface{} {
+			getValue = func(v interface{}) (interface{}, bool) {
 				tv := v.(*O)
 				if tv == nil {
-					return nil
+					return nil, false
 				}
 
 				rv := reflect.ValueOf(tv)
-				return rv.Elem().FieldByIndex(source.Index).Interface()
+				fieldValue, err := rv.Elem().FieldByIndexErr(source.Index)
+				if err != nil {
+					return nil, false
+				}
+				return fieldValue.Interface(), false
+			}
+		}
+
+		transform := func(r any) any {
+			return r
+		}
+		if source.Type.Kind() == reflect.Slice || source.Type.Kind() == reflect.Array {
+			transform = func(r any) any {
+				return reflectListValue{reflect.ValueOf(r)}
 			}
 		}
 
 		resolver = schema.SimpleResolver(func(v interface{}) (interface{}, error) {
-			return getValue(v), nil
+			result, _ := getValue(v)
+			return transform(result), nil
 		})
 		c.registerObjectField(typeOf[*O](), name, &fieldRuntimeInfo{
 			sourceField: source,
-			invoker: func(q QueryInfo, o interface{}) interface{} {
-				return getValue(o)
+			invoker: func(q *invokeQueryInfo, o interface{}) interface{} {
+				result, isAddr := getValue(o)
+				if isAddr {
+					result = reflect.ValueOf(result).Elem().Interface()
+				}
+				return result
 			},
 		})
 	case resolverFactory:

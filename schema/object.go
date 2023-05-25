@@ -44,6 +44,7 @@ type ResolverContext interface {
 	context.Context
 	ChildWalker
 	GetArgumentValue(name string) (interface{}, error)
+	GetRawArgumentValue(name string) (LiteralValue, error)
 	ChildFieldsIterator() FieldSelectionIterator
 }
 

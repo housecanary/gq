@@ -1,0 +1,38 @@
+{
+  enum
+  object1(
+    inputObject: {
+      id: 123
+      string: "s1"
+      int: 42
+      float: 1024.768
+      bool: true
+      custom: "1-2-3"
+      inputObject: { string: "nested" }
+    }
+  ) {
+    id
+    string
+    int
+    float
+    bool
+    custom
+    nested {
+      string
+    }
+  }
+  interface {
+    field1
+  }
+  union {
+    ... on Object1 {
+      __typename
+      string
+    }
+
+    ... on Object2 {
+      __typename
+      field1
+    }
+  }
+}

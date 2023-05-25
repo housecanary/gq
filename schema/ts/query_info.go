@@ -16,6 +16,7 @@ package ts
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/housecanary/gq/schema"
 )
@@ -26,4 +27,9 @@ type QueryInfo interface {
 	ArgumentValue(name string) (interface{}, error)
 	QueryContext() context.Context
 	ChildFieldsIterator() schema.FieldSelectionIterator
+}
+
+type internalQueryInfo interface {
+	QueryInfo
+	setArgumentValue(name string, dest reflect.Value, converter inputConverter) error
 }

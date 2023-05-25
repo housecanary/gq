@@ -1,0 +1,23 @@
+{
+  "data": {
+    "enum": "VALUE1",
+    "object1": {
+      "id": "123",
+      "string": "s1",
+      "int": 42,
+      "float": 1024.768,
+      "bool": true,
+      "custom": "1-2-3",
+      "nested": {
+        "string": "nested"
+      }
+    },
+    "interface": {
+      "field1": "o2 field"
+    },
+    "union": {
+      "__typename": "Object1",
+      "string": "o1 field"
+    }
+  }
+}

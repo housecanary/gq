@@ -45,6 +45,31 @@ func (r reflectionInputListCreator) Creator() schema.InputListCreator {
 	return reflectionInputListCreator{reflect.SliceOf(r.typ)}
 }
 
+type reflectListValue struct {
+	reflect.Value
+}
+
+func (v reflectListValue) ForEachElement(cb schema.ListValueCallback) {
+	for i := 0; i < v.Len(); i++ {
+		item := v.Index(i)
+		if item.Kind() == reflect.Ptr && item.IsNil() {
+			cb(nil)
+		} else if item.Kind() == reflect.Array || item.Kind() == reflect.Slice {
+			cb(reflectListValue{item})
+		} else {
+			cb(item.Interface())
+		}
+	}
+}
+
+func toList(v reflect.Value) schema.ListValue {
+	if v.IsNil() {
+		return nil
+	}
+
+	return reflectListValue{v}
+}
+
 func typeOf[T any]() reflect.Type {
 	var empty T
 	return reflect.TypeOf(&empty).Elem()

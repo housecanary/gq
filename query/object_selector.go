@@ -295,6 +295,31 @@ func (c *exeContext) GetArgumentValue(name string) (interface{}, error) {
 	return rv, err
 }
 
+func (c *exeContext) GetRawArgumentValue(name string) (schema.LiteralValue, error) {
+	_, ok := c.currentField.ArgResolvers[name]
+	if !ok {
+		return nil, fmt.Errorf("Invalid argument %s", name)
+	}
+
+	val, ok := c.currentField.ArgValues[name]
+	if !ok {
+		val = c.currentField.DefaultValues[name]
+	}
+
+	if val == nil {
+		return nil, nil
+	}
+
+	var lv schema.LiteralValue
+	if converted, ok := val.(schema.LiteralValue); ok {
+		lv = converted
+	} else {
+		lv = c.astValueToLiteralValue(val.(ast.Value))
+	}
+
+	return lv, nil
+}
+
 func (c *exeContext) ChildFieldsIterator() schema.FieldSelectionIterator {
 	return newSelectionIterator(c.currentField.Sel)
 }

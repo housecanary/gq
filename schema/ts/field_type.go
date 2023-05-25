@@ -99,16 +99,16 @@ func (ft *FieldType[R]) buildFieldDef(c *buildContext) (*ast.FieldDefinition, bo
 	return fd, wasTypeInferred, nil
 }
 
-type argBinder[A any] func(QueryInfo, *A) error
+type argBinder[A any, Q internalQueryInfo] func(Q, *A) error
 
-func makeArgBinder[A any](c *buildContext) (argBinder[A], error) {
+func makeArgBinder[A any, Q internalQueryInfo](c *buildContext) (argBinder[A, Q], error) {
 	typ := typeOf[A]()
 	if typ.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("invalid arguments type, expected a struct got %v", typ.Kind())
 	}
 
 	fields := reflect.VisibleFields(typ)
-	binds := make([]func(QueryInfo, reflect.Value) error, 0, len(fields))
+	binds := make([]func(Q, reflect.Value) error, 0, len(fields))
 	for _, field := range fields {
 		field := field
 
@@ -118,33 +118,44 @@ func makeArgBinder[A any](c *buildContext) (argBinder[A], error) {
 				return nil, fmt.Errorf("No provider registered for type %v", field.Type)
 			}
 
-			binds = append(binds, func(qi QueryInfo, v reflect.Value) error {
+			binds = append(binds, func(qi Q, v reflect.Value) error {
 				av := provider(qi)
-				v.FieldByIndex(field.Index).Set(reflect.ValueOf(av))
+				target, err := v.FieldByIndexErr(field.Index)
+				if err != nil {
+					return err
+				}
+				target.Set(reflect.ValueOf(av))
 				return nil
 			})
 			continue
 		}
 
 		ad, _, err := parseStructField(c, field, parser.ParsePartialInputValueDefinition)
-		if ad == nil {
+		if ad == nil && err == nil {
 			continue
 		}
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse input argument %s: %w", field.Name, err)
 		}
 
-		binds = append(binds, func(qi QueryInfo, v reflect.Value) error {
-			av, err := qi.ArgumentValue(ad.Name)
+		converter := makeInputConverterForType(c, ad.Type, field.Type)
+		if converter == nil {
+			return nil, fmt.Errorf("input argument %s cannot be mapped to an input type", field.Name)
+		}
+		binds = append(binds, func(qi Q, v reflect.Value) error {
+			target, err := v.FieldByIndexErr(field.Index)
 			if err != nil {
 				return err
 			}
-			v.FieldByIndex(field.Index).Set(reflect.ValueOf(av))
+			err = qi.setArgumentValue(ad.Name, target, converter)
+			if err != nil {
+				return fmt.Errorf("invalid input for argument %s: %w", ad.Name, err)
+			}
 			return nil
 		})
 	}
 
-	return func(qi QueryInfo, a *A) error {
+	return func(qi Q, a *A) error {
 		rv := reflect.ValueOf(a).Elem()
 		for _, bind := range binds {
 			if err := bind(qi, rv); err != nil {
@@ -163,20 +174,33 @@ func (qi queryInfo) QueryContext() context.Context {
 	return qi.ResolverContext
 }
 
-func (qi queryInfo) ArgumentValue(name string) (interface{}, error) {
+func (qi queryInfo) ArgumentValue(name string) (any, error) {
 	return qi.ResolverContext.GetArgumentValue(name)
 }
 
-func returnResult[T any](r Result[T]) (interface{}, error) {
+func (qi queryInfo) setArgumentValue(name string, dest reflect.Value, converter inputConverter) error {
+	raw, err := qi.ResolverContext.GetRawArgumentValue(name)
+
+	if err != nil {
+		return err
+	}
+	return converter(raw, dest)
+}
+
+func returnResult[T any](r Result[T], transform func(T) any) (any, error) {
 	t, f, e := r.UnpackResult()
 	if e != nil {
 		return nil, e
 	}
 	if f != nil {
-		return schema.AsyncValueFunc(func(ctx context.Context) (interface{}, error) {
-			return f(ctx)
+		return schema.AsyncValueFunc(func(ctx context.Context) (any, error) {
+			t, e := f(ctx)
+			if e != nil {
+				return nil, e
+			}
+			return transform(t), e
 		}), nil
 	}
 
-	return t, nil
+	return transform(t), nil
 }

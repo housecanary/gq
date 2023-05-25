@@ -57,11 +57,16 @@ func (b *interfaceTypeBuilder[I, T]) parse(namePrefix string) (*gqlTypeInfo, ref
 func (b *interfaceTypeBuilder[I, T]) build(c *buildContext, sb *schema.Builder) error {
 	typeNameMap := c.getInterfaceImplementationMap(b.def.Name)
 	tb := sb.AddInterfaceType(b.def.Name, func(ctx context.Context, value interface{}) (interface{}, string) {
-		ib := (Interface[T])(value.(I))
-		if ib.objectType == nil {
+		var iface Interface[T]
+		switch value := value.(type) {
+		case I:
+			iface = (Interface[T])(value)
+		case *I:
+			iface = (Interface[T])(*value)
+		case nil:
 			return nil, ""
 		}
-		return ib.Value, typeNameMap[ib.objectType]
+		return iface.Value, typeNameMap[iface.objectType]
 	})
 	setSchemaElementProps(tb, b.def.Description, b.def.Directives)
 	for _, fd := range b.def.FieldsDefinition {

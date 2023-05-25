@@ -53,8 +53,17 @@ func (b *enumTypeBuilder[E]) build(c *buildContext, sb *schema.Builder) error {
 	etb := sb.AddEnumType(
 		b.def.Name,
 		func(ctx context.Context, v interface{}) (schema.LiteralValue, error) {
-			ev := v.(E)
-			return schema.LiteralString(ev), nil
+			var s string
+			switch v := v.(type) {
+			case E:
+				s = string(v)
+			case *E:
+				s = string(*v)
+			}
+			if s == "" {
+				return nil, nil
+			}
+			return schema.LiteralString(s), nil
 		},
 		func(ctx context.Context, v schema.LiteralValue) (interface{}, error) {
 			if sv, ok := v.(schema.LiteralString); ok {
@@ -77,4 +86,19 @@ func (b *enumTypeBuilder[E]) build(c *buildContext, sb *schema.Builder) error {
 	}
 
 	return nil
+}
+
+func (b *enumTypeBuilder[E]) makeInputConverter(c *buildContext) inputConverter {
+	return func(value schema.LiteralValue, dest reflect.Value) error {
+		if sv, ok := value.(schema.LiteralString); ok {
+			*dest.Addr().Interface().(*E) = E(sv)
+			return nil
+		}
+
+		if value == nil {
+			dest.Set(reflect.ValueOf(E("")))
+			return nil
+		}
+		return fmt.Errorf("invalid enum value: %v (%T), expected a string", value, value)
+	}
 }

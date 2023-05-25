@@ -1,0 +1,30 @@
+{
+  "data": {
+    "lists": [["a", "b"]],
+    "fieldList": ["c"],
+    "requiredArg": null,
+    "requiredField": null
+  },
+  "errors": [
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 5
+        }
+      ],
+      "message": "invalid input for argument string: value is required, but was not provided",
+      "path": ["requiredArg"]
+    },
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 6
+        }
+      ],
+      "message": "invalid input for argument input: invalid input for field requiredField: value is required, but was not provided",
+      "path": ["requiredField"]
+    }
+  ]
+}

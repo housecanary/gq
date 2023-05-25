@@ -46,16 +46,29 @@ func (ot *ObjectType[O]) NewInstance() *O {
 
 // AddField adds a new field to the given object type
 func AddField[R, O any, F func(o *O) Result[R]](objectType *ObjectType[O], fieldDefinition string, resolverFn F) *FieldType[F] {
+	transform := func(r R) any {
+		return r
+	}
+
+	if typeOf[R]().Kind() == reflect.Struct {
+		transform = func(r R) any {
+			return &r
+		}
+	} else if typeOf[R]().Kind() == reflect.Slice || typeOf[R]().Kind() == reflect.Array {
+		transform = func(r R) any {
+			return reflectListValue{reflect.ValueOf(r)}
+		}
+	}
 	ft := &FieldType[F]{
 		ResolverFunction: resolverFn,
 		def:              fieldDefinition,
 		rType:            typeOf[R](),
 		makeResolverFn: func(c *buildContext) (schema.Resolver, fieldInvoker, error) {
 			resolver := schema.SimpleResolver(func(v interface{}) (interface{}, error) {
-				return returnResult(resolverFn(v.(*O)))
+				return returnResult(resolverFn(v.(*O)), transform)
 			})
 
-			invoker := func(q QueryInfo, o interface{}) interface{} {
+			invoker := func(q *invokeQueryInfo, o interface{}) interface{} {
 				return resolverFn(o.(*O))
 			}
 
@@ -69,28 +82,46 @@ func AddField[R, O any, F func(o *O) Result[R]](objectType *ObjectType[O], field
 
 // AddFieldWithArgs adds a new field with input args to the given object type
 func AddFieldWithArgs[R, A, O any, F func(o *O, a *A) Result[R]](objectType *ObjectType[O], fieldDefinition string, resolverFn F) *FieldType[F] {
+	transform := func(r R) any {
+		return r
+	}
+
+	if typeOf[R]().Kind() == reflect.Struct {
+		transform = func(r R) any {
+			return &r
+		}
+	} else if typeOf[R]().Kind() == reflect.Slice || typeOf[R]().Kind() == reflect.Array {
+		transform = func(r R) any {
+			return reflectListValue{reflect.ValueOf(r)}
+		}
+	}
 	ft := &FieldType[F]{
 		ResolverFunction: resolverFn,
 		def:              fieldDefinition,
 		rType:            typeOf[R](),
 		aType:            typeOf[A](),
 		makeResolverFn: func(c *buildContext) (schema.Resolver, fieldInvoker, error) {
-			bindArgs, err := makeArgBinder[A](c)
+			bindArgsResolver, err := makeArgBinder[A, queryInfo](c)
 			if err != nil {
 				return nil, nil, err
 			}
 			resolver := schema.FullResolver(func(ctx schema.ResolverContext, v interface{}) (interface{}, error) {
 				var args A
-				if err := bindArgs(queryInfo{ctx}, &args); err != nil {
+				qi := queryInfo{ctx}
+				if err := bindArgsResolver(qi, &args); err != nil {
 					var empty R
 					return empty, err
 				}
-				return returnResult(resolverFn(v.(*O), &args))
+				return returnResult(resolverFn(v.(*O), &args), transform)
 			})
 
-			invoker := func(q QueryInfo, o interface{}) interface{} {
+			bindArgsInvoker, err := makeArgBinder[A, *invokeQueryInfo](c)
+			if err != nil {
+				return nil, nil, err
+			}
+			invoker := func(q *invokeQueryInfo, o interface{}) interface{} {
 				var args A
-				if err := bindArgs(q, &args); err != nil {
+				if err := bindArgsInvoker(q, &args); err != nil {
 					return result.Error[R](err)
 				}
 				return resolverFn(o.(*O), &args)

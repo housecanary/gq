@@ -50,11 +50,16 @@ func (b *unionTypeBuilder[U]) build(c *buildContext, sb *schema.Builder) error {
 	}
 
 	tb := sb.AddUnionType(b.def.Name, members, func(ctx context.Context, value interface{}) (interface{}, string) {
-		ub := (Union)(value.(U))
-		if ub.objectType == nil {
+		var union Union
+		switch value := value.(type) {
+		case U:
+			union = Union(value)
+		case *U:
+			union = Union(*value)
+		case nil:
 			return nil, ""
 		}
-		return ub.unionElement, typeNameMap[ub.objectType]
+		return union.unionElement, typeNameMap[union.objectType]
 	})
 	setSchemaElementProps(tb, b.def.Description, b.def.Directives)
 	return nil

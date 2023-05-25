@@ -24,8 +24,9 @@ import (
 )
 
 type inputObjectTypeBuilder[O any] struct {
-	it  *InputObjectType[O]
-	def *ast.BasicTypeDefinition
+	it             *InputObjectType[O]
+	def            *ast.BasicTypeDefinition
+	inputConverter inputConverter
 }
 
 func (b *inputObjectTypeBuilder[O]) describe() string {
@@ -116,4 +117,64 @@ func (b *inputObjectTypeBuilder[O]) mapFields(c *buildContext, tb *schema.InputO
 	}
 
 	return nil
+}
+
+func (b *inputObjectTypeBuilder[O]) makeInputConverter(c *buildContext) inputConverter {
+	if b.inputConverter != nil {
+		return b.inputConverter
+	}
+
+	typ := typeOf[O]()
+
+	type fieldConversionData struct {
+		Name      string
+		Index     []int
+		Converter inputConverter
+	}
+
+	var fields []*fieldConversionData
+
+	b.inputConverter = func(value schema.LiteralValue, dest reflect.Value) error {
+		if value == nil {
+			dest.Set(reflect.Zero(reflect.PointerTo(typ)))
+		}
+
+		var target O
+		rv := reflect.ValueOf(&target).Elem()
+		if obj, ok := value.(schema.LiteralObject); ok {
+			for _, f := range fields {
+				target, err := rv.FieldByIndexErr(f.Index)
+				if err != nil {
+					return err
+				}
+				if err := f.Converter(obj[f.Name], target); err != nil {
+					return fmt.Errorf("invalid input for field %s: %w", f.Name, err)
+				}
+			}
+		}
+
+		dest.Set(reflect.ValueOf(&target))
+		return nil
+	}
+
+	for _, field := range reflect.VisibleFields(typ) {
+		if !field.IsExported() {
+			continue
+		}
+
+		valueDef, _, err := parseStructField(c, field, parser.ParsePartialInputValueDefinition)
+		if err != nil {
+			// We'll log an error when we build this field into the schema later on, so no need to report now
+			return nil
+		}
+
+		inputConverter := makeInputConverterForType(c, valueDef.Type, field.Type)
+		fields = append(fields, &fieldConversionData{
+			Name:      valueDef.Name,
+			Index:     field.Index,
+			Converter: inputConverter,
+		})
+	}
+
+	return b.inputConverter
 }
