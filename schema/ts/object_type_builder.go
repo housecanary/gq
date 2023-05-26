@@ -244,7 +244,7 @@ func (b *objectTypeBuilder[O]) buildField(c *buildContext, tb *schema.ObjectType
 
 				rv := reflect.ValueOf(tv)
 				fieldValue, err := rv.Elem().FieldByIndexErr(source.Index)
-				if err != nil {
+				if err != nil { // err means we would have had to step through nil ptr, so nil
 					return nil, false
 				}
 				return fieldValue.Addr().Interface(), !canonicalTypeIsPtr
@@ -260,7 +260,7 @@ func (b *objectTypeBuilder[O]) buildField(c *buildContext, tb *schema.ObjectType
 
 				rv := reflect.ValueOf(tv)
 				fieldValue, err := rv.Elem().FieldByIndexErr(source.Index)
-				if err != nil {
+				if err != nil { // err means we would have had to step through nil ptr, so nil
 					return nil, false
 				}
 				return fieldValue.Interface(), false
