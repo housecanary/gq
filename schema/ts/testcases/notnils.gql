@@ -3,5 +3,6 @@
   lists(list: [["a", "b"]])
   requiredArg
   requiredField(input:{})
+  requiredFieldOk: requiredField(input:{requiredField:"test"})
   requiredArgDefault
 }

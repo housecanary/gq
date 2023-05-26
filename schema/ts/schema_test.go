@@ -83,7 +83,8 @@ func TestTSSchema(t *testing.T) {
 				})
 
 				type inputObject struct {
-					RequiredField types.String `gq:": String!"`
+					RequiredField            types.String `gq:": String!"`
+					RequiredFieldWithDefault types.String `gq:": String! = \"test2\""`
 				}
 				ts.NewInputObjectType[inputObject](mod, ``)
 
@@ -91,7 +92,7 @@ func TestTSSchema(t *testing.T) {
 					Input *inputObject
 				}
 				ts.AddFieldWithArgs(queryGQLType, `requiredField`, func(q *Query, a *args3) ts.Result[types.String] {
-					return result.Of(a.Input.RequiredField)
+					return result.Of(types.NewString(a.Input.RequiredField.String() + a.Input.RequiredFieldWithDefault.String()))
 				})
 
 				type args4 struct {

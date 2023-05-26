@@ -129,11 +129,7 @@ func (s *objectSelector) addField(cc *compileContext, typ *schema.ObjectType, as
 	return nil
 }
 
-func maybeNotifyCb(v interface{}, err error, cb ResolveCompleteCallback) (interface{}, error) {
-	if cb == nil {
-		return v, err
-	}
-
+func notifyCb(v interface{}, err error, cb ResolveCompleteCallback) (interface{}, error) {
 	if _, ok := v.(schema.AsyncValue); ok {
 		return v, err
 	}
@@ -151,7 +147,9 @@ func safeResolve(ctx *exeContext, value interface{}, f *objectSelectorField, cb 
 
 	if sr, ok := resolver.(schema.SafeResolver); ok {
 		fieldValue, err = sr.ResolveSafe(ctx, value)
-		fieldValue, err = maybeNotifyCb(fieldValue, err, cb)
+		if cb != nil {
+			fieldValue, err = notifyCb(fieldValue, err, cb)
+		}
 		if err != nil {
 			ctx.listener.NotifyError(err)
 		}
@@ -165,8 +163,9 @@ func safeResolve(ctx *exeContext, value interface{}, f *objectSelectorField, cb 
 					err = fmt.Errorf("%v", r)
 				}
 			}
-
-			fieldValue, err = maybeNotifyCb(fieldValue, err, cb)
+			if cb != nil {
+				fieldValue, err = notifyCb(fieldValue, err, cb)
+			}
 
 			if err != nil {
 				ctx.listener.NotifyError(err)
@@ -202,7 +201,9 @@ func safeAsync(ctx *exeContext, async schema.AsyncValue, f *objectSelectorField,
 		}()
 
 		value, err := async.Await(ctx)
-		value, err = maybeNotifyCb(value, err, cb)
+		if cb != nil {
+			value, err = notifyCb(value, err, cb)
+		}
 
 		if err != nil {
 			ctx.listener.NotifyError(err)

@@ -4,7 +4,8 @@
     "fieldList": ["c"],
     "requiredArg": null,
     "requiredField": null,
-    "requiredArgDefault": "hello"
+    "requiredArgDefault": "hello",
+    "requiredFieldOk": "testtest2"
   },
   "errors": [
     {

@@ -230,10 +230,10 @@ func (b *objectTypeBuilder[O]) buildField(c *buildContext, tb *schema.ObjectType
 	switch source := source.(type) {
 	case reflect.StructField:
 		var getValue func(v interface{}) (interface{}, bool)
-
 		if source.Type.Kind() == reflect.Struct {
 			canonicalTypeIsPtr := false
-			if gqlType, ok := c.goTypeToSchemaType[reflect.PointerTo(source.Type)]; ok && gqlType.kind == kindObject {
+			pTyp := reflect.PointerTo(source.Type)
+			if gqlType, ok := c.goTypeToSchemaType[pTyp]; ok && gqlType.kind == kindObject {
 				canonicalTypeIsPtr = true
 			}
 			getValue = func(v interface{}) (interface{}, bool) {
@@ -276,10 +276,10 @@ func (b *objectTypeBuilder[O]) buildField(c *buildContext, tb *schema.ObjectType
 			}
 		}
 
-		resolver = schema.SimpleResolver(func(v interface{}) (interface{}, error) {
+		resolver = schema.MarkSafe(schema.SimpleResolver(func(v interface{}) (interface{}, error) {
 			result, _ := getValue(v)
 			return transform(result), nil
-		})
+		}))
 		c.registerObjectField(typeOf[*O](), name, &fieldRuntimeInfo{
 			sourceField: source,
 			invoker: func(q *invokeQueryInfo, o interface{}) interface{} {
