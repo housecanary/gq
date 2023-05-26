@@ -24,9 +24,8 @@ import (
 
 type exeContext struct {
 	context.Context
-	listener     ExecutionListener
-	variables    Variables
-	currentField *objectSelectorField
+	listener  ExecutionListener
+	variables Variables
 }
 
 // A contFunc represents remaining work that a selector needs to perform.

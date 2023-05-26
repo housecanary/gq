@@ -140,13 +140,16 @@ func notifyCb(v interface{}, err error, cb ResolveCompleteCallback) (interface{}
 }
 
 func safeResolve(ctx *exeContext, value interface{}, f *objectSelectorField, cb ResolveCompleteCallback) (fieldValue interface{}, err error) {
-	prevField := ctx.currentField
-	ctx.currentField = f
-	defer func() { ctx.currentField = prevField }()
 	resolver := f.Field.Resolver()
 
+	var ctxToUse context.Context
+	ctxToUse = ctx
+	if _, ok := resolver.(schema.FullResolver); ok {
+		ctxToUse = &resolverContext{exeContext: ctx, currentField: f}
+	}
+
 	if sr, ok := resolver.(schema.SafeResolver); ok {
-		fieldValue, err = sr.ResolveSafe(ctx, value)
+		fieldValue, err = sr.ResolveSafe(ctxToUse, value)
 		if cb != nil {
 			fieldValue, err = notifyCb(fieldValue, err, cb)
 		}
@@ -171,7 +174,7 @@ func safeResolve(ctx *exeContext, value interface{}, f *objectSelectorField, cb 
 				ctx.listener.NotifyError(err)
 			}
 		}()
-		fieldValue, err = resolver.Resolve(ctx, value)
+		fieldValue, err = resolver.Resolve(ctxToUse, value)
 	}
 	return
 }
@@ -267,7 +270,12 @@ func (s *objectSelector) apply(ctx *exeContext, value interface{}, collector col
 	return nil
 }
 
-func (c *exeContext) GetArgumentValue(name string) (interface{}, error) {
+type resolverContext struct {
+	*exeContext
+	currentField *objectSelectorField
+}
+
+func (c *resolverContext) GetArgumentValue(name string) (interface{}, error) {
 	argResolver, ok := c.currentField.ArgResolvers[name]
 	if !ok {
 		return nil, fmt.Errorf("Invalid argument %s", name)
@@ -296,7 +304,7 @@ func (c *exeContext) GetArgumentValue(name string) (interface{}, error) {
 	return rv, err
 }
 
-func (c *exeContext) GetRawArgumentValue(name string) (schema.LiteralValue, error) {
+func (c *resolverContext) GetRawArgumentValue(name string) (schema.LiteralValue, error) {
 	_, ok := c.currentField.ArgResolvers[name]
 	if !ok {
 		return nil, fmt.Errorf("Invalid argument %s", name)
@@ -321,11 +329,11 @@ func (c *exeContext) GetRawArgumentValue(name string) (schema.LiteralValue, erro
 	return lv, nil
 }
 
-func (c *exeContext) ChildFieldsIterator() schema.FieldSelectionIterator {
+func (c *resolverContext) ChildFieldsIterator() schema.FieldSelectionIterator {
 	return newSelectionIterator(c.currentField.Sel)
 }
 
-func (c *exeContext) WalkChildSelections(cb schema.FieldWalkCB) bool {
+func (c *resolverContext) WalkChildSelections(cb schema.FieldWalkCB) bool {
 	return walkChildSelectionsAdapter{c.currentField.Sel}.WalkChildSelections(cb)
 }
 

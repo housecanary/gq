@@ -66,7 +66,7 @@ func (q *PreparedQuery) Execute(ctx context.Context, rootValue interface{}, vari
 	}
 	cc := acquireJSONCollectorContext()
 	collector := &vJSONCollector{cc: cc}
-	cf := q.root.apply(&exeContext{ctx, listener, variables, nil}, rootValue, collector)
+	cf := q.root.apply(&exeContext{ctx, listener, variables}, rootValue, collector)
 	for cont := cf; cont != nil; {
 		listener.NotifyIdle()
 		cont = cont()
@@ -129,7 +129,7 @@ func (b *Batch) Execute(ctx context.Context, listener ExecutionListener) [][]byt
 		collectors[i] = collector
 		rootValue := b.rootValues[i]
 		variables := b.variables[i]
-		deferred.Add(q.root.apply(&exeContext{ctx, listener, variables, nil}, rootValue, collector))
+		deferred.Add(q.root.apply(&exeContext{ctx, listener, variables}, rootValue, collector))
 	}
 
 	// Drain the worklist
