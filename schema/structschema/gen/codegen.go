@@ -349,7 +349,7 @@ func (c *outputCtx) addInputObjectTypeRegistration(body *j.Group, meta *inputObj
 			)
 		}
 
-		if types.AssignableTo(meta.NamedType(), c.ssPkg.Scope().Lookup("validatable").Type()) {
+		if types.AssignableTo(types.NewPointer(meta.NamedType()), c.ssPkg.Scope().Lookup("validatable").Type()) {
 			g.If(j.Id("err").Op(":=").Id("val").Dot("Validate").Call(), j.Id("err").Op("!=").Nil()).Block(
 				j.Return(j.Nil(), j.Id("err")),
 			)
